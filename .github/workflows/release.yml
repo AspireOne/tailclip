@@ -59,6 +59,7 @@ jobs:
           mkdir -p dist/package
 
           GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -H windowsgui" -o dist/package/tailclip-agent.exe ./cmd/tailclip-agent
+          cp cmd/tailclip-agent/app.manifest dist/package/tailclip-agent.exe.manifest
 
           cp README.md dist/package/
           cp docs/config.example.json dist/package/

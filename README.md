@@ -70,6 +70,21 @@ Fields:
 
 ## Run
 
+Build the binaries and manifests first:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
+```
+
+Then run either binary:
+
+```powershell
+.\bin\tailclip-agent.exe
+.\bin\tailclip-agent-gui.exe
+```
+
+If you build manually instead of using the script, copy `cmd/tailclip-agent/app.manifest` next to the executable as `<binary>.manifest`. Walk requires the Common Controls v6 manifest to start correctly.
+
 Run directly with Go:
 
 ```powershell
@@ -96,13 +111,16 @@ Importable Tasker assets live in:
 ## Build
 
 ```powershell
-go build -o bin/tailclip-agent.exe ./cmd/tailclip-agent
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
-For a release-style Windows build without a console window:
+Equivalent manual commands:
 
 ```powershell
-go build -ldflags="-H windowsgui" -o bin/tailclip-agent.exe ./cmd/tailclip-agent
+go build -o bin/tailclip-agent.exe ./cmd/tailclip-agent
+go build -ldflags="-H windowsgui" -o bin/tailclip-agent-gui.exe ./cmd/tailclip-agent
+Copy-Item cmd\tailclip-agent\app.manifest bin\tailclip-agent.exe.manifest
+Copy-Item cmd\tailclip-agent\app.manifest bin\tailclip-agent-gui.exe.manifest
 ```
 
 ## Test
