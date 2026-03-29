@@ -101,6 +101,22 @@ go build -o bin/tailclip-agent.exe ./cmd/tailclip-agent
 go test ./...
 ```
 
+## Release
+
+GitHub release automation is documented in [docs/RELEASING.md](docs/RELEASING.md).
+
+The intended V1 flow is:
+
+- CI on push and pull request
+- trigger the `Release` workflow from terminal with a version such as `v1.0.0`
+- automatic tag creation, GitHub release publishing, asset upload, and generated notes
+
+Terminal shortcut:
+
+```powershell
+.\scripts\release.ps1 -Version v1.0.0
+```
+
 ## Project Layout
 
 - `cmd/tailclip-agent`: CLI entrypoint
@@ -109,8 +125,10 @@ go test ./...
 - `internal/event`: clipboard event model and hashing
 - `internal/transport`: HTTP client for sending events
 - `internal/config`: config loading/validation
+- `scripts`: local developer helpers, including release trigger
 - `docs/ARCHITECTURE.md`: architecture and design notes
 - `docs/TASKER_SETUP.md`: Android/Tasker setup guide
+- `docs/RELEASING.md`: GitHub release workflow and versioning
 - `integrations/tasker`: importable Tasker assets and endpoint test helper
 
 ## Notes
