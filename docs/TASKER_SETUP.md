@@ -196,12 +196,12 @@ Use the same token in:
 
 ## Test The Phone Before Running The Agent
 
-Use the PowerShell helper in [`docs/tasker/test-tailclip-endpoint.ps1`](./tasker/test-tailclip-endpoint.ps1).
+Use the PowerShell helper in [`integrations/tasker/test-tailclip-endpoint.ps1`](../integrations/tasker/test-tailclip-endpoint.ps1).
 
 Example:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\docs\tasker\test-tailclip-endpoint.ps1 `
+powershell -ExecutionPolicy Bypass -File .\integrations\tasker\test-tailclip-endpoint.ps1 `
   -Url "http://100.101.102.103:8080/clipboard" `
   -Token "replace-me" `
   -Content "hello from manual test"
@@ -225,7 +225,7 @@ So yes, the Android side can be defined as a file instead of being recreated for
 
 This repo now includes an importable profile export:
 
-- [`docs/tasker/Tailclip.prf.xml`](./tasker/Tailclip.prf.xml)
+- [`integrations/tasker/Tailclip.prf.xml`](../integrations/tasker/Tailclip.prf.xml)
 
 After import, set a Tasker global variable named `%TAILCLIP_TOKEN` to the same value as the Windows `auth_token`.
 
@@ -235,9 +235,9 @@ Tasker XML is importable, but it is not a pleasant authoring format and is versi
 
 The pragmatic workflow is:
 
-1. Import [`docs/tasker/Tailclip.prf.xml`](./tasker/Tailclip.prf.xml).
+1. Import [`integrations/tasker/Tailclip.prf.xml`](../integrations/tasker/Tailclip.prf.xml).
 2. Set `%TAILCLIP_TOKEN` in Tasker to your shared secret.
-3. Test with [`docs/tasker/test-tailclip-endpoint.ps1`](./tasker/test-tailclip-endpoint.ps1).
+3. Test with [`integrations/tasker/test-tailclip-endpoint.ps1`](../integrations/tasker/test-tailclip-endpoint.ps1).
 4. If you customize the Tasker flow on-device, export the updated XML back into the repo.
 
 For this repo, a standalone exported `.prj.xml` is the best end-state artifact once one clean on-device export exists.

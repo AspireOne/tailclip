@@ -80,6 +80,15 @@ Run with explicit config path:
 go run ./cmd/tailclip-agent -config "C:\path\to\config.json"
 ```
 
+## Android / Tasker
+
+Tasker setup instructions are in [docs/TASKER_SETUP.md](docs/TASKER_SETUP.md).
+
+Importable Tasker assets live in:
+
+- `integrations/tasker/Tailclip.prf.xml`
+- `integrations/tasker/test-tailclip-endpoint.ps1`
+
 ## Build
 
 ```powershell
@@ -101,6 +110,8 @@ go test ./...
 - `internal/transport`: HTTP client for sending events
 - `internal/config`: config loading/validation
 - `docs/ARCHITECTURE.md`: architecture and design notes
+- `docs/TASKER_SETUP.md`: Android/Tasker setup guide
+- `integrations/tasker`: importable Tasker assets and endpoint test helper
 
 ## Notes
 
