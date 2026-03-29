@@ -1,0 +1,8 @@
+{
+  "android_url": "http://100.101.102.103:8080/clipboard",
+  "auth_token": "replace-me",
+  "device_id": "windows-laptop",
+  "http_timeout_ms": 3000,
+  "poll_interval_ms": 300,
+  "log_level": "info"
+}
