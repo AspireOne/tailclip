@@ -13,7 +13,7 @@ When you run the `Release` workflow from the GitHub Actions tab, it will:
 
 1. Validate the version string.
 2. Run `go test ./...`.
-3. Build `tailclip-agent.exe` for `windows/amd64`.
+3. Build `tailclip-agent.exe` for `windows/amd64` using the Windows GUI subsystem.
 4. Package a release zip that includes:
    - `tailclip-agent.exe`
    - `README.md`

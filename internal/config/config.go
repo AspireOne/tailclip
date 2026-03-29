@@ -13,6 +13,8 @@ import (
 const (
 	defaultConfigDirName  = "tailclip"
 	defaultConfigFileName = "config.json"
+	defaultHTTPTimeout    = 3 * time.Second
+	defaultPollInterval   = 300 * time.Millisecond
 )
 
 type Config struct {
@@ -22,6 +24,7 @@ type Config struct {
 	HTTPTimeout  time.Duration
 	PollInterval time.Duration
 	LogLevel     string
+	Enabled      bool
 }
 
 type fileConfig struct {
@@ -31,6 +34,7 @@ type fileConfig struct {
 	HTTPTimeoutMS  int    `json:"http_timeout_ms"`
 	PollIntervalMS int    `json:"poll_interval_ms"`
 	LogLevel       string `json:"log_level"`
+	Enabled        *bool  `json:"enabled,omitempty"`
 }
 
 func Load(path string) (Config, error) {
@@ -52,25 +56,9 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("parse config %q: %w", path, err)
 	}
 
-	cfg := Config{
-		AndroidURL:   strings.TrimSpace(raw.AndroidURL),
-		AuthToken:    strings.TrimSpace(raw.AuthToken),
-		DeviceID:     strings.TrimSpace(raw.DeviceID),
-		HTTPTimeout:  durationFromMS(raw.HTTPTimeoutMS, 3*time.Second),
-		PollInterval: durationFromMS(raw.PollIntervalMS, 300*time.Millisecond),
-		LogLevel:     strings.TrimSpace(raw.LogLevel),
-	}
-
-	if cfg.DeviceID == "" {
-		hostname, err := os.Hostname()
-		if err != nil {
-			return Config{}, fmt.Errorf("resolve hostname for device_id: %w", err)
-		}
-		cfg.DeviceID = hostname
-	}
-
-	if cfg.LogLevel == "" {
-		cfg.LogLevel = "info"
+	cfg, err := normalize(raw)
+	if err != nil {
+		return Config{}, err
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -78,6 +66,51 @@ func Load(path string) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func Save(path string, cfg Config) error {
+	if path == "" {
+		var err error
+		path, err = DefaultPath()
+		if err != nil {
+			return err
+		}
+	}
+
+	cfg, err := normalizeFileConfig(toFileConfig(cfg))
+	if err != nil {
+		return err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create config dir %q: %w", dir, err)
+	}
+
+	data, err := json.MarshalIndent(toFileConfig(cfg), "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal config %q: %w", path, err)
+	}
+	data = append(data, '\n')
+
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("write config %q: %w", path, err)
+	}
+
+	return nil
+}
+
+func Default() Config {
+	return Config{
+		HTTPTimeout:  defaultHTTPTimeout,
+		PollInterval: defaultPollInterval,
+		LogLevel:     "info",
+		Enabled:      true,
+	}
 }
 
 func DefaultPath() (string, error) {
@@ -113,4 +146,48 @@ func durationFromMS(value int, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return time.Duration(value) * time.Millisecond
+}
+
+func normalize(raw fileConfig) (Config, error) {
+	cfg := Default()
+	cfg.AndroidURL = strings.TrimSpace(raw.AndroidURL)
+	cfg.AuthToken = strings.TrimSpace(raw.AuthToken)
+	cfg.DeviceID = strings.TrimSpace(raw.DeviceID)
+	cfg.HTTPTimeout = durationFromMS(raw.HTTPTimeoutMS, defaultHTTPTimeout)
+	cfg.PollInterval = durationFromMS(raw.PollIntervalMS, defaultPollInterval)
+	cfg.LogLevel = strings.TrimSpace(raw.LogLevel)
+	if raw.Enabled != nil {
+		cfg.Enabled = *raw.Enabled
+	}
+
+	if cfg.DeviceID == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return Config{}, fmt.Errorf("resolve hostname for device_id: %w", err)
+		}
+		cfg.DeviceID = hostname
+	}
+
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
+	}
+
+	return cfg, nil
+}
+
+func normalizeFileConfig(raw fileConfig) (Config, error) {
+	return normalize(raw)
+}
+
+func toFileConfig(cfg Config) fileConfig {
+	enabled := cfg.Enabled
+	return fileConfig{
+		AndroidURL:     cfg.AndroidURL,
+		AuthToken:      cfg.AuthToken,
+		DeviceID:       cfg.DeviceID,
+		HTTPTimeoutMS:  int(cfg.HTTPTimeout / time.Millisecond),
+		PollIntervalMS: int(cfg.PollInterval / time.Millisecond),
+		LogLevel:       cfg.LogLevel,
+		Enabled:        &enabled,
+	}
 }

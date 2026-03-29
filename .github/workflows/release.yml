@@ -58,7 +58,7 @@ jobs:
 
           mkdir -p dist/package
 
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/package/tailclip-agent.exe ./cmd/tailclip-agent
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -H windowsgui" -o dist/package/tailclip-agent.exe ./cmd/tailclip-agent
 
           cp README.md dist/package/
           cp docs/config.example.json dist/package/
@@ -106,7 +106,7 @@ jobs:
           ## Quick Start
 
           1. Download \`tailclip-agent-windows-amd64.zip\` and \`Tailclip.prf.xml\` from the release assets.
-          2. Extract the zip, copy \`config.example.json\` to \`%APPDATA%\\tailclip\\config.json\`, and fill in your phone URL and token.
+          2. Extract the zip, run \`tailclip-agent.exe\`, click the tray icon, and fill in your phone URL and token in the settings window.
           3. Import \`Tailclip.prf.xml\` into Tasker and set the global variable \`%TAILCLIP_TOKEN\` to the same token.
           4. Follow the full Android guide at https://github.com/${GITHUB_REPOSITORY}/blob/$VERSION/docs/TASKER_SETUP.md
 

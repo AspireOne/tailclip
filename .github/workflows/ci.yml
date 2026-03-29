@@ -26,4 +26,4 @@ jobs:
         run: go test ./...
 
       - name: Verify Windows build
-        run: GOOS=windows GOARCH=amd64 go build -o /tmp/tailclip-agent.exe ./cmd/tailclip-agent
+        run: GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui" -o /tmp/tailclip-agent.exe ./cmd/tailclip-agent

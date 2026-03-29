@@ -185,6 +185,7 @@ Point the Windows agent at the phone endpoint, for example:
   "android_url": "http://100.101.102.103:8080/clipboard",
   "auth_token": "replace-me",
   "device_id": "windows-laptop",
+  "enabled": true,
   "http_timeout_ms": 3000
 }
 ```

@@ -4,6 +4,7 @@ package clipboard
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -14,6 +15,7 @@ import (
 
 const (
 	cfUnicodeText     = 13
+	errClassExists    = 1410
 	wmClose           = 0x0010
 	wmDestroy         = 0x0002
 	wmClipboardUpdate = 0x031D
@@ -46,7 +48,14 @@ var (
 var (
 	windowProcPtr   = syscall.NewCallback(windowProc)
 	watcherRegistry sync.Map
+	watcherClassMu  sync.Mutex
+	watcherClassSet bool
+	registerClassW  = func(wc *wndClass) (uintptr, uintptr, error) {
+		return procRegisterClassW.Call(uintptr(unsafe.Pointer(wc)))
+	}
 )
+
+const watcherWindowClassName = "TailclipClipboardWatcher"
 
 type point struct {
 	X int32
@@ -122,7 +131,7 @@ func (w *Watcher) run(ctx context.Context) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	className := syscall.StringToUTF16Ptr("TailclipClipboardWatcher")
+	className := syscall.StringToUTF16Ptr(watcherWindowClassName)
 
 	instance, _, err := procGetModuleHandleW.Call(0)
 	if instance == 0 {
@@ -131,15 +140,8 @@ func (w *Watcher) run(ctx context.Context) {
 		return
 	}
 
-	wc := wndClass{
-		WndProc:   windowProcPtr,
-		Instance:  instance,
-		ClassName: className,
-	}
-
-	atom, _, err := procRegisterClassW.Call(uintptr(unsafe.Pointer(&wc)))
-	if atom == 0 {
-		w.sendError(fmt.Errorf("RegisterClassW failed: %w", err))
+	if err := ensureWatcherWindowClass(instance); err != nil {
+		w.sendError(err)
 		close(w.started)
 		return
 	}
@@ -240,6 +242,30 @@ func (w *Watcher) sendError(err error) {
 	case w.errs <- err:
 	default:
 	}
+}
+
+func ensureWatcherWindowClass(instance uintptr) error {
+	watcherClassMu.Lock()
+	defer watcherClassMu.Unlock()
+
+	if watcherClassSet {
+		return nil
+	}
+
+	className := syscall.StringToUTF16Ptr(watcherWindowClassName)
+	wc := wndClass{
+		WndProc:   windowProcPtr,
+		Instance:  instance,
+		ClassName: className,
+	}
+
+	atom, _, err := registerClassW(&wc)
+	if atom == 0 && !errors.Is(err, syscall.Errno(errClassExists)) {
+		return fmt.Errorf("RegisterClassW failed: %w", err)
+	}
+
+	watcherClassSet = true
+	return nil
 }
 
 func readText() (string, error) {

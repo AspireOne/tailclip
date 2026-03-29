@@ -1,6 +1,6 @@
 # Tailclip
 
-Tailclip is a small Go agent that syncs text copied on a Windows PC to an Android phone over your Tailscale network.
+Tailclip is a small Go tray app that syncs text copied on a Windows PC to an Android phone over your Tailscale network.
 
 It is designed for a private, local-first flow:
 
@@ -51,6 +51,7 @@ Example config (`docs/config.example.json`):
   "android_url": "http://100.101.102.103:8080/clipboard",
   "auth_token": "replace-me",
   "device_id": "windows-laptop",
+  "enabled": true,
   "http_timeout_ms": 3000,
   "poll_interval_ms": 300,
   "log_level": "info"
@@ -62,6 +63,7 @@ Fields:
 - `android_url` (required): full target URL, e.g. `http://100.x.y.z:8080/clipboard`
 - `auth_token` (required): bearer token sent as `Authorization: Bearer <token>`
 - `device_id` (optional): sender identifier; defaults to hostname if omitted
+- `enabled` (optional): whether syncing is active (default `true`)
 - `http_timeout_ms` (optional): HTTP timeout in milliseconds (default `3000`)
 - `poll_interval_ms` (optional): watcher fallback interval in milliseconds (default `300`)
 - `log_level` (optional): `debug`, `info`, `warn`, `error` (default `info`)
@@ -73,6 +75,8 @@ Run directly with Go:
 ```powershell
 go run ./cmd/tailclip-agent
 ```
+
+On Windows this launches the tray app. Click the tray icon to open the settings window, edit config values, enable or disable syncing, and toggle start on login.
 
 Run with explicit config path:
 
@@ -93,6 +97,12 @@ Importable Tasker assets live in:
 
 ```powershell
 go build -o bin/tailclip-agent.exe ./cmd/tailclip-agent
+```
+
+For a release-style Windows build without a console window:
+
+```powershell
+go build -ldflags="-H windowsgui" -o bin/tailclip-agent.exe ./cmd/tailclip-agent
 ```
 
 ## Test
@@ -119,7 +129,7 @@ Terminal shortcut:
 
 ## Project Layout
 
-- `cmd/tailclip-agent`: CLI entrypoint
+- `cmd/tailclip-agent`: platform entrypoint (`tray` on Windows, `CLI` elsewhere)
 - `internal/app`: main runtime loop
 - `internal/clipboard`: clipboard watcher implementation (Windows + non-Windows stub)
 - `internal/event`: clipboard event model and hashing
@@ -136,5 +146,6 @@ Terminal shortcut:
 - Current implementation is one-way: Windows -> Android.
 - Tasker on Android is required for the receiver side in the current design.
 - Delivery is best effort: failed sends are logged and the agent continues.
+- Windows logs are written to `%APPDATA%\tailclip\logs\tailclip.log`.
 - Non-Windows builds compile, but clipboard watching is only implemented on Windows.
 - Non-Android receivers are not implemented. Cross-platform support would require new receiver/client implementations and a PR.
