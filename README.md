@@ -70,7 +70,7 @@ Fields:
 
 ## Run
 
-Build the binaries and manifests first:
+Build the binaries first:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
@@ -83,7 +83,7 @@ Then run either binary:
 .\bin\tailclip-agent-gui.exe
 ```
 
-If you build manually instead of using the script, copy `cmd/tailclip-agent/app.manifest` next to the executable as `<binary>.manifest`. Walk requires the Common Controls v6 manifest to start correctly.
+The build embeds the Windows manifest into the executable, so no sidecar `.manifest` file is required at runtime.
 
 Run directly with Go:
 
@@ -117,10 +117,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 Equivalent manual commands:
 
 ```powershell
+go run ./cmd/genwinres -manifest .\cmd\tailclip-agent\app.manifest -out .\cmd\tailclip-agent\rsrc_windows_amd64.syso -arch amd64
 go build -o bin/tailclip-agent.exe ./cmd/tailclip-agent
 go build -ldflags="-H windowsgui" -o bin/tailclip-agent-gui.exe ./cmd/tailclip-agent
-Copy-Item cmd\tailclip-agent\app.manifest bin\tailclip-agent.exe.manifest
-Copy-Item cmd\tailclip-agent\app.manifest bin\tailclip-agent-gui.exe.manifest
 ```
 
 ## Test

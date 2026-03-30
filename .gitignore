@@ -1,3 +1,4 @@
 .cache/
 bin/
 tailclip-agent.exe
+cmd/tailclip-agent/rsrc_windows_*.syso

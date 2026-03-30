@@ -9,6 +9,9 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $outputPath = Join-Path $repoRoot $OutputDir
 $manifestSource = Join-Path $repoRoot "cmd\tailclip-agent\app.manifest"
+$sysoDir = Join-Path $repoRoot "cmd\tailclip-agent"
+$targetArch = (go env GOARCH).Trim()
+$resourceObject = Join-Path $sysoDir ("rsrc_windows_{0}.syso" -f $targetArch)
 
 if (-not (Test-Path -LiteralPath $outputPath)) {
     New-Item -ItemType Directory -Path $outputPath | Out-Null
@@ -26,8 +29,12 @@ try {
 
     $consoleExe = Join-Path $outputPath "tailclip-agent.exe"
     $guiExe = Join-Path $outputPath "tailclip-agent-gui.exe"
-    $consoleManifest = "$consoleExe.manifest"
-    $guiManifest = "$guiExe.manifest"
+
+    Write-Host "Generating embedded manifest resource: $resourceObject"
+    go run ./cmd/genwinres -manifest $manifestSource -out $resourceObject -arch $targetArch
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
 
     Write-Host "Building console binary: $consoleExe"
     go build -o $consoleExe ./cmd/tailclip-agent
@@ -41,9 +48,8 @@ try {
         exit $LASTEXITCODE
     }
 
-    Write-Host "Copying manifests..."
-    Copy-Item -LiteralPath $manifestSource -Destination $consoleManifest -Force
-    Copy-Item -LiteralPath $manifestSource -Destination $guiManifest -Force
+    Remove-Item -LiteralPath "$consoleExe.manifest" -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath "$guiExe.manifest" -Force -ErrorAction SilentlyContinue
 
     Write-Host "Build complete."
 }

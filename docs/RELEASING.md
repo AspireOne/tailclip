@@ -16,7 +16,6 @@ When you run the `Release` workflow from the GitHub Actions tab, it will:
 3. Build `tailclip-agent.exe` for `windows/amd64` using the Windows GUI subsystem.
 4. Package a release zip that includes:
    - `tailclip-agent.exe`
-   - `tailclip-agent.exe.manifest`
    - `README.md`
    - `docs/config.example.json`
    - `docs/TASKER_SETUP.md`
