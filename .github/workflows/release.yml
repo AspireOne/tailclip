@@ -64,18 +64,23 @@ jobs:
           cp README.md dist/package/
           cp docs/config.example.json dist/package/
           cp docs/TASKER_SETUP.md dist/package/
+          cp docs/TASKER_SHARE_TO_PC.md dist/package/
+          cp integrations/tasker/tailclip_receiver_server.prf.xml dist/package/
+          cp integrations/tasker/tailclip_share_sender.xml dist/package/
           cp integrations/tasker/test-tailclip-endpoint.ps1 dist/package/
+          cp integrations/tasker/test-tailclip-windows-endpoint.ps1 dist/package/
 
           (
             cd dist/package
             zip -r ../tailclip-agent-windows-amd64.zip .
           )
 
-          cp integrations/tasker/Tailclip.prf.xml dist/Tailclip.prf.xml
+          cp integrations/tasker/tailclip_receiver_server.prf.xml dist/
+          cp integrations/tasker/tailclip_share_sender.xml dist/
 
           (
             cd dist
-            sha256sum tailclip-agent-windows-amd64.zip Tailclip.prf.xml > SHA256SUMS.txt
+            sha256sum tailclip-agent-windows-amd64.zip tailclip_receiver_server.prf.xml tailclip_share_sender.xml > SHA256SUMS.txt
           )
 
       - name: Generate release notes
@@ -106,15 +111,18 @@ jobs:
           cat > dist/release-notes.md <<EOF
           ## Quick Start
 
-          1. Download \`tailclip-agent-windows-amd64.zip\` and \`Tailclip.prf.xml\` from the release assets.
+          1. Download \`tailclip-agent-windows-amd64.zip\` and the Tasker XML files from the release assets.
           2. Extract the zip, run \`tailclip-agent.exe\`, click the tray icon, and fill in your phone URL and token in the settings window.
-          3. Import \`Tailclip.prf.xml\` into Tasker and set the global variable \`%TAILCLIP_TOKEN\` to the same token.
-          4. Follow the full Android guide at https://github.com/${GITHUB_REPOSITORY}/blob/$VERSION/docs/TASKER_SETUP.md
+          3. Import \`tailclip_receiver_server.prf.xml\` for automatic \`Windows -> Android\`.
+          4. Import \`tailclip_share_sender.xml\` for manual \`Android -> Windows\`.
+          5. Set the Tasker globals documented in the guides, including \`%TAILCLIP_TOKEN\`.
+          6. Follow the full Android guides at https://github.com/${GITHUB_REPOSITORY}/blob/$VERSION/docs/TASKER_SETUP.md and https://github.com/${GITHUB_REPOSITORY}/blob/$VERSION/docs/TASKER_SHARE_TO_PC.md
 
           ## Included Assets
 
           - \`tailclip-agent-windows-amd64.zip\`: Windows agent binary plus setup files.
-          - \`Tailclip.prf.xml\`: importable Tasker profile.
+          - \`tailclip_receiver_server.prf.xml\`: Tasker profile for automatic \`Windows -> Android\`.
+          - \`tailclip_share_sender.xml\`: Tasker profile for manual \`Android -> Windows\`.
           - \`SHA256SUMS.txt\`: checksums for the release assets.
 
           ## Commits In This Release
@@ -137,7 +145,8 @@ jobs:
           args=(
             "$VERSION"
             "dist/tailclip-agent-windows-amd64.zip#Windows agent"
-            "dist/Tailclip.prf.xml#Tasker profile"
+            "dist/tailclip_receiver_server.prf.xml#Tasker profile (Windows to Android)"
+            "dist/tailclip_share_sender.xml#Tasker profile (Android to Windows)"
             "dist/SHA256SUMS.txt#Checksums"
             "--title" "Tailclip $VERSION"
             "--target" "$GITHUB_SHA"

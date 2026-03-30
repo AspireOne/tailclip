@@ -25,5 +25,12 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+      - name: Verify Tasker integration assets
+        run: |
+          test -f integrations/tasker/tailclip_receiver_server.prf.xml
+          test -f integrations/tasker/tailclip_share_sender.xml
+          test -f integrations/tasker/test-tailclip-endpoint.ps1
+          test -f integrations/tasker/test-tailclip-windows-endpoint.ps1
+
       - name: Verify Windows build
         run: GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui" -o /tmp/tailclip-agent.exe ./cmd/tailclip-agent

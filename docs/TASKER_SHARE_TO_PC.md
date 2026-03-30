@@ -60,6 +60,10 @@ Create a profile:
 
 If you want the trigger to appear directly in the Android share sheet, enable Tasker's `Direct Share Targets` preference and fully exit/reopen Tasker once.
 
+This repo also includes an exported Tasker asset for this flow:
+
+- [`integrations/tasker/tailclip_share_sender.xml`](../integrations/tasker/tailclip_share_sender.xml)
+
 ## Tasker Task
 
 Use these actions in `Tailclip Send To PC`:
@@ -118,6 +122,15 @@ Tailclip rejects:
 - wrong token with `401`
 - wrong method with `405`
 - missing or empty `content` with `400`
+
+## Import Recommendation
+
+If the bundled export works on your Tasker version, prefer importing it instead of rebuilding the share flow manually:
+
+1. Import [`integrations/tasker/tailclip_share_sender.xml`](../integrations/tasker/tailclip_share_sender.xml).
+2. Set `%TAILCLIP_PC_URL` to your Windows tailnet endpoint, for example `http://100.67.245.84:8080/share`.
+3. Set `%TAILCLIP_TOKEN` to the same value as Tailclip's `auth_token`.
+4. Test from Android with `Share -> Send to PC`.
 
 ## Test From Windows
 

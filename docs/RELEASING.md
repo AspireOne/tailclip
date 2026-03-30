@@ -19,8 +19,14 @@ When you run the `Release` workflow from the GitHub Actions tab, it will:
    - `README.md`
    - `docs/config.example.json`
    - `docs/TASKER_SETUP.md`
+   - `docs/TASKER_SHARE_TO_PC.md`
+   - `integrations/tasker/tailclip_receiver_server.prf.xml`
+   - `integrations/tasker/tailclip_share_sender.xml`
    - `integrations/tasker/test-tailclip-endpoint.ps1`
-5. Attach the importable Tasker profile `integrations/tasker/Tailclip.prf.xml`.
+   - `integrations/tasker/test-tailclip-windows-endpoint.ps1`
+5. Attach the importable Tasker profiles:
+   - `integrations/tasker/tailclip_receiver_server.prf.xml`
+   - `integrations/tasker/tailclip_share_sender.xml`
 6. Generate release notes with:
    - a short quick-start section
    - a commit list since the previous tag
@@ -44,5 +50,5 @@ When you run the `Release` workflow from the GitHub Actions tab, it will:
 - Keep the release workflow manually triggered. It is safer than auto-publishing on every merge and still stays quick from terminal.
 - Use the release page as the user-facing download surface:
   - the zip is the Windows install artifact
-  - the Tasker profile is the Android import artifact
+  - the Tasker XML files are the Android import artifacts
   - the release description is the short tutorial and changelog

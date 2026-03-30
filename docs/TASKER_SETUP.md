@@ -228,7 +228,7 @@ So yes, the Android side can be defined as a file instead of being recreated for
 
 This repo now includes an importable profile export:
 
-- [`integrations/tasker/Tailclip.prf.xml`](../integrations/tasker/Tailclip.prf.xml)
+- [`integrations/tasker/tailclip_receiver_server.prf.xml`](../integrations/tasker/tailclip_receiver_server.prf.xml)
 
 After import, set a Tasker global variable named `%TAILCLIP_TOKEN` to the same value as the Windows `auth_token`.
 
@@ -238,7 +238,7 @@ Tasker XML is importable, but it is not a pleasant authoring format and is versi
 
 The pragmatic workflow is:
 
-1. Import [`integrations/tasker/Tailclip.prf.xml`](../integrations/tasker/Tailclip.prf.xml).
+1. Import [`integrations/tasker/tailclip_receiver_server.prf.xml`](../integrations/tasker/tailclip_receiver_server.prf.xml).
 2. Set `%TAILCLIP_TOKEN` in Tasker to your shared secret.
 3. Test with [`integrations/tasker/test-tailclip-endpoint.ps1`](../integrations/tasker/test-tailclip-endpoint.ps1).
 4. If you customize the Tasker flow on-device, export the updated XML back into the repo.

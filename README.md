@@ -111,7 +111,8 @@ Tasker setup instructions are in:
 
 Importable Tasker assets live in:
 
-- `integrations/tasker/Tailclip.prf.xml`
+- `integrations/tasker/tailclip_receiver_server.prf.xml`
+- `integrations/tasker/tailclip_share_sender.xml`
 - `integrations/tasker/test-tailclip-endpoint.ps1`
 - `integrations/tasker/test-tailclip-windows-endpoint.ps1`
 
@@ -161,9 +162,10 @@ Terminal shortcut:
 - `internal/config`: config loading/validation
 - `scripts`: local developer helpers, including release trigger
 - `docs/ARCHITECTURE.md`: architecture and design notes
-- `docs/TASKER_SETUP.md`: Android/Tasker setup guide
+- `docs/TASKER_SETUP.md`: Tasker guide for automatic `Windows -> Android`
+- `docs/TASKER_SHARE_TO_PC.md`: Tasker guide for manual `Android -> Windows`
 - `docs/RELEASING.md`: GitHub release workflow and versioning
-- `integrations/tasker`: importable Tasker assets and endpoint test helper
+- `integrations/tasker`: importable Tasker assets and endpoint test helpers
 
 ## Notes
 
