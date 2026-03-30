@@ -3,6 +3,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/color"
@@ -10,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
@@ -34,6 +36,7 @@ type TrayApp struct {
 	enabledCheck     *walk.CheckBox
 	startOnLogin     *walk.CheckBox
 	statusLabel      *walk.Label
+	testStatusLabel  *walk.Label
 	toggleSyncAction *walk.Action
 
 	currentConfig config.Config
@@ -124,6 +127,12 @@ func (a *TrayApp) createWindow() error {
 						},
 					},
 					PushButton{
+						Text: "Send Test Clip",
+						OnClicked: func() {
+							a.sendTestClip()
+						},
+					},
+					PushButton{
 						Text: "Open Config Folder",
 						OnClicked: func() {
 							a.openConfigFolder()
@@ -137,6 +146,10 @@ func (a *TrayApp) createWindow() error {
 						},
 					},
 				},
+			},
+			Label{
+				AssignTo: &a.testStatusLabel,
+				Text:     "Send a sample clip to verify delivery to the phone endpoint.",
 			},
 		},
 	}.Create()); err != nil {
@@ -263,7 +276,7 @@ func (a *TrayApp) populateForm(cfg config.Config) {
 	a.enabledCheck.SetChecked(cfg.Enabled)
 }
 
-func (a *TrayApp) save() {
+func (a *TrayApp) formConfig() (config.Config, error) {
 	cfg := config.Default()
 	if a.hasConfig {
 		cfg = a.currentConfig
@@ -273,6 +286,24 @@ func (a *TrayApp) save() {
 	cfg.AuthToken = strings.TrimSpace(a.authTokenEdit.Text())
 	cfg.DeviceID = strings.TrimSpace(a.deviceIDEdit.Text())
 	cfg.Enabled = a.enabledCheck.Checked()
+
+	if cfg.DeviceID == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return config.Config{}, fmt.Errorf("resolve hostname for device_id: %w", err)
+		}
+		cfg.DeviceID = hostname
+	}
+
+	return cfg, nil
+}
+
+func (a *TrayApp) save() {
+	cfg, err := a.formConfig()
+	if err != nil {
+		a.setError(err)
+		return
+	}
 
 	if err := config.Save(a.configPath, cfg); err != nil {
 		a.setError(err)
@@ -295,6 +326,31 @@ func (a *TrayApp) save() {
 	a.populateForm(savedCfg)
 	a.controller.Apply(savedCfg)
 	a.refreshToggleAction()
+}
+
+func (a *TrayApp) sendTestClip() {
+	cfg, err := a.formConfig()
+	if err != nil {
+		a.setError(err)
+		return
+	}
+
+	now := time.Now()
+	content := fmt.Sprintf("Tailclip test %s", now.Format("2006-01-02 15:04:05"))
+	if err := a.controller.SendTestClip(context.Background(), cfg, content); err != nil {
+		message := fmt.Sprintf("Test delivery failed: %v", err)
+		a.testStatusLabel.SetText(message)
+		if a.notifyIcon != nil {
+			a.notifyIcon.ShowError("Tailclip", message)
+		}
+		return
+	}
+
+	message := fmt.Sprintf("Test clip delivered. Confirm the phone clipboard shows: %s", content)
+	a.testStatusLabel.SetText(message)
+	if a.notifyIcon != nil {
+		a.notifyIcon.ShowInfo("Tailclip", "Test clip delivered to the phone endpoint.")
+	}
 }
 
 func (a *TrayApp) toggleSyncing() {

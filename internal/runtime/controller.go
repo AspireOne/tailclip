@@ -26,6 +26,7 @@ type Status struct {
 type Controller struct {
 	logger *slog.Logger
 	runner func(context.Context, *slog.Logger, config.Config) error
+	tester func(context.Context, *slog.Logger, config.Config, string) error
 
 	mu           sync.RWMutex
 	cfg          config.Config
@@ -42,6 +43,7 @@ func NewController(logger *slog.Logger) *Controller {
 	c := &Controller{
 		logger: logger,
 		runner: app.Run,
+		tester: app.SendTestClipboard,
 		status: Status{
 			State:   StateNeedsConfig,
 			Message: "Set up Tailclip to start syncing.",
@@ -174,6 +176,24 @@ func (c *Controller) SetRunner(run func(context.Context, *slog.Logger, config.Co
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.runner = run
+}
+
+func (c *Controller) SetTester(test func(context.Context, *slog.Logger, config.Config, string) error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.tester = test
+}
+
+func (c *Controller) SendTestClip(ctx context.Context, cfg config.Config, content string) error {
+	c.mu.RLock()
+	tester := c.tester
+	c.mu.RUnlock()
+
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
+	return tester(ctx, c.logger, cfg, content)
 }
 
 func (c *Controller) stopLocked() {

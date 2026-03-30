@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -167,6 +168,46 @@ func TestApplyPreservesActiveRunStateWhenPreviousRunnerExits(t *testing.T) {
 	case <-secondCanceled:
 	case <-time.After(time.Second):
 		t.Fatal("expected disable to cancel the active run")
+	}
+}
+
+func TestSendTestClipUsesTester(t *testing.T) {
+	controller := NewController(testLogger())
+
+	var gotCfg config.Config
+	var gotContent string
+	controller.SetTester(func(ctx context.Context, logger *slog.Logger, cfg config.Config, content string) error {
+		gotCfg = cfg
+		gotContent = content
+		return nil
+	})
+
+	cfg := config.Default()
+	cfg.AndroidURL = "http://127.0.0.1/clipboard"
+	cfg.AuthToken = "token"
+	cfg.DeviceID = "pc"
+
+	if err := controller.SendTestClip(context.Background(), cfg, "hello from test"); err != nil {
+		t.Fatalf("SendTestClip returned error: %v", err)
+	}
+
+	if gotCfg.AndroidURL != cfg.AndroidURL {
+		t.Fatalf("expected cfg to be passed through, got %+v", gotCfg)
+	}
+	if gotContent != "hello from test" {
+		t.Fatalf("expected content to be passed through, got %q", gotContent)
+	}
+}
+
+func TestSendTestClipValidatesConfig(t *testing.T) {
+	controller := NewController(testLogger())
+
+	err := controller.SendTestClip(context.Background(), config.Default(), "hello")
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if !strings.Contains(err.Error(), "android_url") {
+		t.Fatalf("expected android_url validation error, got %v", err)
 	}
 }
 
