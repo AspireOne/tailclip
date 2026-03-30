@@ -105,7 +105,7 @@ func (a *TrayApp) createWindow() error {
 					Label{Text: "Android URL"},
 					LineEdit{AssignTo: &a.androidURLEdit},
 					Label{Text: "Auth token"},
-					LineEdit{AssignTo: &a.authTokenEdit, PasswordMode: true},
+					LineEdit{AssignTo: &a.authTokenEdit},
 					Label{Text: "Device ID"},
 					LineEdit{AssignTo: &a.deviceIDEdit},
 					CheckBox{AssignTo: &a.enabledCheck, Text: "Enabled", ColumnSpan: 2},
