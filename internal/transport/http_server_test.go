@@ -211,6 +211,49 @@ func TestServerAcceptsPlainTextInboundShare(t *testing.T) {
 	}
 }
 
+func TestServerRejectsMissingContentType(t *testing.T) {
+	server := NewServer(testLogger(), config.Config{
+		WindowsListenAddr: ":8080",
+		AuthToken:         "secret",
+		DeviceID:          "pc",
+	}, func(ctx context.Context, evt event.ClipboardEvent) error {
+		t.Fatal("apply should not be called")
+		return nil
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, sharePath, bytes.NewBufferString("hello"))
+	req.Header.Set("Authorization", "Bearer secret")
+
+	server.handleShare(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rec.Code)
+	}
+}
+
+func TestServerRejectsUnsupportedContentType(t *testing.T) {
+	server := NewServer(testLogger(), config.Config{
+		WindowsListenAddr: ":8080",
+		AuthToken:         "secret",
+		DeviceID:          "pc",
+	}, func(ctx context.Context, evt event.ClipboardEvent) error {
+		t.Fatal("apply should not be called")
+		return nil
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, sharePath, bytes.NewBufferString("content=hello"))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	server.handleShare(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rec.Code)
+	}
+}
+
 func bodyReader(t *testing.T, body map[string]any) io.Reader {
 	t.Helper()
 

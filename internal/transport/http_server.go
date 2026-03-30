@@ -128,6 +128,9 @@ func (s *Server) decodeEvent(r *http.Request) (event.ClipboardEvent, error) {
 		}
 		return evt, nil
 	}
+	if !strings.HasPrefix(contentType, "text/plain") {
+		return event.ClipboardEvent{}, errors.New("unsupported media type")
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
