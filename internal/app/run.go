@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"tailclip/internal/clipboard"
 	"tailclip/internal/config"
@@ -22,6 +23,21 @@ var newInboundServer = func(logger *slog.Logger, cfg config.Config, apply transp
 }
 
 var runSenderLoop = runSender
+
+type outboundSkipReason string
+
+const (
+	outboundSkipNone      outboundSkipReason = ""
+	outboundSkipDuplicate outboundSkipReason = "duplicate"
+	outboundSkipOversized outboundSkipReason = "oversized"
+)
+
+type outboundDecision struct {
+	evt         event.ClipboardEvent
+	contentHash string
+	charCount   int
+	skipReason  outboundSkipReason
+}
 
 func Run(ctx context.Context, logger *slog.Logger, cfg config.Config) error {
 	outboundEnabled := strings.TrimSpace(cfg.AndroidURL) != ""
@@ -129,13 +145,22 @@ func runSender(ctx context.Context, logger *slog.Logger, cfg config.Config, send
 			return err
 		}
 
-		evt := event.NewClipboardEvent(change.Text, cfg.DeviceID, change.DetectedAt)
-
-		if state.shouldSkipOutbound(evt.ContentHash) {
-			logger.Debug("skipping duplicate clipboard text", "content_hash", evt.ContentHash)
+		decision := decideOutboundEvent(change, cfg, state)
+		if decision.skipReason == outboundSkipDuplicate {
+			logger.Debug("skipping duplicate clipboard text", "content_hash", decision.contentHash)
+			continue
+		}
+		if decision.skipReason == outboundSkipOversized {
+			logger.Info(
+				"skipping oversized clipboard text",
+				"content_hash", decision.contentHash,
+				"content_chars", decision.charCount,
+				"max_outbound_chars", cfg.MaxOutboundChars,
+			)
 			continue
 		}
 
+		evt := decision.evt
 		logger.Debug("sending clipboard update", "event_id", evt.ID, "content_hash", evt.ContentHash)
 		if err := sender.SendClipboard(ctx, evt); err != nil {
 			logger.Warn("clipboard send failed", "error", err, "event_id", evt.ID)
@@ -144,6 +169,33 @@ func runSender(ctx context.Context, logger *slog.Logger, cfg config.Config, send
 
 		state.markSent(evt.ContentHash)
 		logger.Info("clipboard synced to android", "event_id", evt.ID)
+	}
+}
+
+func decideOutboundEvent(change clipboard.TextChange, cfg config.Config, state *syncState) outboundDecision {
+	contentHash := event.HashContent(change.Text)
+	if state.shouldSkipOutbound(contentHash) {
+		return outboundDecision{
+			contentHash: contentHash,
+			skipReason:  outboundSkipDuplicate,
+		}
+	}
+
+	if cfg.MaxOutboundChars > 0 {
+		charCount := utf8.RuneCountInString(change.Text)
+		if charCount > cfg.MaxOutboundChars {
+			return outboundDecision{
+				contentHash: contentHash,
+				charCount:   charCount,
+				skipReason:  outboundSkipOversized,
+			}
+		}
+	}
+
+	evt := event.NewClipboardEvent(change.Text, cfg.DeviceID, change.DetectedAt)
+	return outboundDecision{
+		evt:         evt,
+		contentHash: evt.ContentHash,
 	}
 }
 

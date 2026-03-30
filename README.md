@@ -50,6 +50,7 @@ Example config (`docs/config.example.json`):
 ```json
 {
   "android_url": "http://100.101.102.103:8080/clipboard",
+  "max_outbound_chars": 0,
   "windows_listen_addr": "",
   "auth_token": "replace-me",
   "device_id": "windows-laptop",
@@ -62,6 +63,7 @@ Example config (`docs/config.example.json`):
 Fields:
 
 - `android_url` (required): full target URL, e.g. `http://100.x.y.z:8080/clipboard`
+- `max_outbound_chars` (optional): maximum Unicode characters Tailclip will send from Windows to Android; `0` disables the limit (default `0`)
 - `windows_listen_addr` (optional): local bind address for inbound Tasker shares; set it to `:8080` (or another address) to enable the listener, leave it empty to disable it
 - `auth_token` (required): bearer token sent as `Authorization: Bearer <token>`
 - `device_id` (optional): sender identifier; defaults to hostname if omitted

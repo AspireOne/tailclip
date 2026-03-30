@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"tailclip/internal/clipboard"
 	"tailclip/internal/config"
 	"tailclip/internal/event"
 	"tailclip/internal/transport"
@@ -60,6 +61,92 @@ func TestSyncStateSkipsConsecutiveOutboundDuplicates(t *testing.T) {
 	}
 	if skip := state.shouldSkipOutbound(event.HashContent("world")); skip {
 		t.Fatal("expected different outbound content to be sent")
+	}
+}
+
+func TestDecideOutboundEventSkipsOversizedClipboardText(t *testing.T) {
+	cfg := config.Default()
+	cfg.DeviceID = "pc"
+	cfg.MaxOutboundChars = 4
+
+	change := clipboard.TextChange{
+		Text:       "hello",
+		DetectedAt: time.Unix(1700000000, 0),
+	}
+
+	decision := decideOutboundEvent(change, cfg, &syncState{})
+	if decision.skipReason != outboundSkipOversized {
+		t.Fatalf("expected oversized clipboard text to be skipped, got %q", decision.skipReason)
+	}
+	if decision.charCount != 5 {
+		t.Fatalf("expected rune count to be reported, got %d", decision.charCount)
+	}
+}
+
+func TestDecideOutboundEventAllowsTextAtLimit(t *testing.T) {
+	cfg := config.Default()
+	cfg.DeviceID = "pc"
+	cfg.MaxOutboundChars = 5
+
+	change := clipboard.TextChange{
+		Text:       "hello",
+		DetectedAt: time.Unix(1700000000, 0),
+	}
+
+	decision := decideOutboundEvent(change, cfg, &syncState{})
+	if decision.skipReason != outboundSkipNone {
+		t.Fatalf("expected clipboard text at limit to be sent, got %q", decision.skipReason)
+	}
+	if decision.evt.Content != "hello" {
+		t.Fatalf("expected event content to round-trip, got %q", decision.evt.Content)
+	}
+}
+
+func TestDecideOutboundEventCountsUnicodeCharacters(t *testing.T) {
+	cfg := config.Default()
+	cfg.DeviceID = "pc"
+	cfg.MaxOutboundChars = 3
+
+	change := clipboard.TextChange{
+		Text:       "a🙂漢",
+		DetectedAt: time.Unix(1700000000, 0),
+	}
+
+	decision := decideOutboundEvent(change, cfg, &syncState{})
+	if decision.skipReason != outboundSkipNone {
+		t.Fatalf("expected three-rune clipboard text to be allowed, got %q", decision.skipReason)
+	}
+
+	cfg.MaxOutboundChars = 2
+	decision = decideOutboundEvent(change, cfg, &syncState{})
+	if decision.skipReason != outboundSkipOversized {
+		t.Fatalf("expected three-rune clipboard text to exceed limit 2, got %q", decision.skipReason)
+	}
+	if decision.charCount != 3 {
+		t.Fatalf("expected Unicode rune count of 3, got %d", decision.charCount)
+	}
+}
+
+func TestDecideOutboundEventClearsPendingEchoWhenOversizedTextDiffers(t *testing.T) {
+	cfg := config.Default()
+	cfg.DeviceID = "pc"
+	cfg.MaxOutboundChars = 1
+
+	var state syncState
+	echoHash := event.HashContent("echo")
+	state.markInboundApplied(echoHash)
+
+	change := clipboard.TextChange{
+		Text:       "large",
+		DetectedAt: time.Unix(1700000000, 0),
+	}
+
+	decision := decideOutboundEvent(change, cfg, &state)
+	if decision.skipReason != outboundSkipOversized {
+		t.Fatalf("expected oversized clipboard text to be skipped, got %q", decision.skipReason)
+	}
+	if skip := state.shouldSkipOutbound(echoHash); skip {
+		t.Fatal("expected oversized clipboard change to clear stale pending echo")
 	}
 }
 

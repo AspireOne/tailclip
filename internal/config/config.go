@@ -18,6 +18,7 @@ const (
 
 type Config struct {
 	AndroidURL        string
+	MaxOutboundChars  int
 	WindowsListenAddr string
 	AuthToken         string
 	DeviceID          string
@@ -28,6 +29,7 @@ type Config struct {
 
 type fileConfig struct {
 	AndroidURL        string `json:"android_url"`
+	MaxOutboundChars  int    `json:"max_outbound_chars"`
 	WindowsListenAddr string `json:"windows_listen_addr"`
 	AuthToken         string `json:"auth_token"`
 	DeviceID          string `json:"device_id"`
@@ -133,6 +135,9 @@ func (c Config) Validate() error {
 	if c.HTTPTimeout <= 0 {
 		return errors.New("config http_timeout_ms must be greater than zero")
 	}
+	if c.MaxOutboundChars < 0 {
+		return errors.New("config max_outbound_chars must be zero or greater")
+	}
 	return nil
 }
 
@@ -146,6 +151,7 @@ func durationFromMS(value int, fallback time.Duration) time.Duration {
 func normalize(raw fileConfig) (Config, error) {
 	cfg := Default()
 	cfg.AndroidURL = strings.TrimSpace(raw.AndroidURL)
+	cfg.MaxOutboundChars = raw.MaxOutboundChars
 	cfg.WindowsListenAddr = strings.TrimSpace(raw.WindowsListenAddr)
 	cfg.AuthToken = strings.TrimSpace(raw.AuthToken)
 	cfg.DeviceID = strings.TrimSpace(raw.DeviceID)
@@ -178,6 +184,7 @@ func toFileConfig(cfg Config) fileConfig {
 	enabled := cfg.Enabled
 	return fileConfig{
 		AndroidURL:        cfg.AndroidURL,
+		MaxOutboundChars:  cfg.MaxOutboundChars,
 		WindowsListenAddr: cfg.WindowsListenAddr,
 		AuthToken:         cfg.AuthToken,
 		DeviceID:          cfg.DeviceID,

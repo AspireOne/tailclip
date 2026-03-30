@@ -40,6 +40,9 @@ func TestLoadDefaultsEnabledWhenMissing(t *testing.T) {
 	if cfg.WindowsListenAddr != "" {
 		t.Fatalf("expected missing windows listen addr to stay disabled, got %q", cfg.WindowsListenAddr)
 	}
+	if cfg.MaxOutboundChars != 0 {
+		t.Fatalf("expected missing max_outbound_chars to default to 0, got %d", cfg.MaxOutboundChars)
+	}
 }
 
 func TestSaveCreatesConfigDirectory(t *testing.T) {
@@ -107,5 +110,40 @@ func TestSavePreservesDisabledInboundListener(t *testing.T) {
 
 	if saved.WindowsListenAddr != "" {
 		t.Fatalf("expected disabled inbound listener to round-trip, got %q", saved.WindowsListenAddr)
+	}
+}
+
+func TestValidateRejectsNegativeMaxOutboundChars(t *testing.T) {
+	cfg := Default()
+	cfg.AndroidURL = "http://127.0.0.1/clipboard"
+	cfg.AuthToken = "token"
+	cfg.DeviceID = "pc"
+	cfg.MaxOutboundChars = -1
+
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected negative max_outbound_chars to be rejected")
+	}
+}
+
+func TestSaveRoundTripsMaxOutboundChars(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+
+	cfg := Default()
+	cfg.AndroidURL = "http://127.0.0.1/clipboard"
+	cfg.AuthToken = "token"
+	cfg.DeviceID = "pc"
+	cfg.MaxOutboundChars = 200
+
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+
+	saved, err := Load(path)
+	if err != nil {
+		t.Fatalf("reload config: %v", err)
+	}
+
+	if saved.MaxOutboundChars != 200 {
+		t.Fatalf("expected max_outbound_chars to round-trip, got %d", saved.MaxOutboundChars)
 	}
 }

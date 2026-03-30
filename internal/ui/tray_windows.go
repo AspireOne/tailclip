@@ -31,6 +31,7 @@ type TrayApp struct {
 	notifyIcon            *walk.NotifyIcon
 	configPathEdit        *walk.LineEdit
 	androidURLEdit        *walk.LineEdit
+	maxOutboundCharsEdit  *walk.NumberEdit
 	windowsListenAddrEdit *walk.LineEdit
 	authTokenEdit         *walk.LineEdit
 	deviceIDEdit          *walk.LineEdit
@@ -96,8 +97,8 @@ func (a *TrayApp) createWindow() error {
 	if err := (MainWindow{
 		AssignTo: &a.mw,
 		Title:    "Tailclip Settings",
-		Size:     Size{Width: 440, Height: 280},
-		MinSize:  Size{Width: 440, Height: 280},
+		Size:     Size{Width: 440, Height: 320},
+		MinSize:  Size{Width: 440, Height: 320},
 		Visible:  false,
 		Layout:   VBox{Margins: Margins{Left: 12, Top: 12, Right: 12, Bottom: 12}},
 		Children: []Widget{
@@ -108,6 +109,15 @@ func (a *TrayApp) createWindow() error {
 					LineEdit{AssignTo: &a.configPathEdit, ReadOnly: true},
 					Label{Text: "Android URL"},
 					LineEdit{AssignTo: &a.androidURLEdit},
+					Label{Text: "Max outbound chars (0 = unlimited)"},
+					NumberEdit{
+						AssignTo:           &a.maxOutboundCharsEdit,
+						Decimals:           0,
+						MinValue:           0,
+						MaxValue:           2147483647,
+						Increment:          1,
+						SpinButtonsVisible: true,
+					},
 					Label{Text: "Windows listen addr"},
 					LineEdit{AssignTo: &a.windowsListenAddrEdit},
 					Label{Text: "Auth token"},
@@ -274,6 +284,7 @@ func (a *TrayApp) loadInitialState() {
 
 func (a *TrayApp) populateForm(cfg config.Config) {
 	a.androidURLEdit.SetText(cfg.AndroidURL)
+	a.maxOutboundCharsEdit.SetValue(float64(cfg.MaxOutboundChars))
 	a.windowsListenAddrEdit.SetText(cfg.WindowsListenAddr)
 	a.authTokenEdit.SetText(cfg.AuthToken)
 	a.deviceIDEdit.SetText(cfg.DeviceID)
@@ -287,6 +298,7 @@ func (a *TrayApp) formConfig() (config.Config, error) {
 	}
 
 	cfg.AndroidURL = strings.TrimSpace(a.androidURLEdit.Text())
+	cfg.MaxOutboundChars = int(a.maxOutboundCharsEdit.Value())
 	cfg.WindowsListenAddr = strings.TrimSpace(a.windowsListenAddrEdit.Text())
 	cfg.AuthToken = strings.TrimSpace(a.authTokenEdit.Text())
 	cfg.DeviceID = strings.TrimSpace(a.deviceIDEdit.Text())
