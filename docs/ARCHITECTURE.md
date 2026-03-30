@@ -149,7 +149,6 @@ The Windows agent should use a small local config file with:
 
 Optional settings:
 
-- `poll_interval_ms` only as a fallback/debug setting, not the primary design
 - `log_level`
 
 If `device_id` is missing, the agent may derive a stable default locally.

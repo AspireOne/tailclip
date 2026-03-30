@@ -102,7 +102,7 @@ type Watcher struct {
 	startOnce sync.Once
 }
 
-func NewWatcher(_ time.Duration) *Watcher {
+func NewWatcher() *Watcher {
 	return &Watcher{
 		events:  make(chan TextChange, 16),
 		notify:  make(chan struct{}, 1),

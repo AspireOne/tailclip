@@ -122,7 +122,7 @@ func (s *syncState) markInboundApplied(contentHash string) {
 }
 
 func runSender(ctx context.Context, logger *slog.Logger, cfg config.Config, sender *transport.Client, state *syncState) error {
-	watcher := clipboard.NewWatcher(cfg.PollInterval)
+	watcher := clipboard.NewWatcher()
 
 	for {
 		change, err := watcher.Next(ctx)

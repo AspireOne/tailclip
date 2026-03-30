@@ -5,6 +5,5 @@
   "device_id": "windows-laptop",
   "enabled": true,
   "http_timeout_ms": 3000,
-  "poll_interval_ms": 300,
   "log_level": "info"
 }

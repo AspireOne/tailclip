@@ -14,7 +14,6 @@ const (
 	defaultConfigDirName  = "tailclip"
 	defaultConfigFileName = "config.json"
 	defaultHTTPTimeout    = 3 * time.Second
-	defaultPollInterval   = 300 * time.Millisecond
 )
 
 type Config struct {
@@ -23,7 +22,6 @@ type Config struct {
 	AuthToken         string
 	DeviceID          string
 	HTTPTimeout       time.Duration
-	PollInterval      time.Duration
 	LogLevel          string
 	Enabled           bool
 }
@@ -34,7 +32,6 @@ type fileConfig struct {
 	AuthToken         string `json:"auth_token"`
 	DeviceID          string `json:"device_id"`
 	HTTPTimeoutMS     int    `json:"http_timeout_ms"`
-	PollIntervalMS    int    `json:"poll_interval_ms"`
 	LogLevel          string `json:"log_level"`
 	Enabled           *bool  `json:"enabled,omitempty"`
 }
@@ -108,10 +105,9 @@ func Save(path string, cfg Config) error {
 
 func Default() Config {
 	return Config{
-		HTTPTimeout:  defaultHTTPTimeout,
-		PollInterval: defaultPollInterval,
-		LogLevel:     "info",
-		Enabled:      true,
+		HTTPTimeout: defaultHTTPTimeout,
+		LogLevel:    "info",
+		Enabled:     true,
 	}
 }
 
@@ -137,9 +133,6 @@ func (c Config) Validate() error {
 	if c.HTTPTimeout <= 0 {
 		return errors.New("config http_timeout_ms must be greater than zero")
 	}
-	if c.PollInterval <= 0 {
-		return errors.New("config poll_interval_ms must be greater than zero")
-	}
 	return nil
 }
 
@@ -157,7 +150,6 @@ func normalize(raw fileConfig) (Config, error) {
 	cfg.AuthToken = strings.TrimSpace(raw.AuthToken)
 	cfg.DeviceID = strings.TrimSpace(raw.DeviceID)
 	cfg.HTTPTimeout = durationFromMS(raw.HTTPTimeoutMS, defaultHTTPTimeout)
-	cfg.PollInterval = durationFromMS(raw.PollIntervalMS, defaultPollInterval)
 	cfg.LogLevel = strings.TrimSpace(raw.LogLevel)
 	if raw.Enabled != nil {
 		cfg.Enabled = *raw.Enabled
@@ -190,7 +182,6 @@ func toFileConfig(cfg Config) fileConfig {
 		AuthToken:         cfg.AuthToken,
 		DeviceID:          cfg.DeviceID,
 		HTTPTimeoutMS:     int(cfg.HTTPTimeout / time.Millisecond),
-		PollIntervalMS:    int(cfg.PollInterval / time.Millisecond),
 		LogLevel:          cfg.LogLevel,
 		Enabled:           &enabled,
 	}

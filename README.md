@@ -55,7 +55,6 @@ Example config (`docs/config.example.json`):
   "device_id": "windows-laptop",
   "enabled": true,
   "http_timeout_ms": 3000,
-  "poll_interval_ms": 300,
   "log_level": "info"
 }
 ```
@@ -68,7 +67,6 @@ Fields:
 - `device_id` (optional): sender identifier; defaults to hostname if omitted
 - `enabled` (optional): whether syncing is active (default `true`)
 - `http_timeout_ms` (optional): HTTP timeout in milliseconds (default `3000`)
-- `poll_interval_ms` (optional): watcher fallback interval in milliseconds (default `300`)
 - `log_level` (optional): `debug`, `info`, `warn`, `error` (default `info`)
 
 ## Run

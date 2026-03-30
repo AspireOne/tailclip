@@ -14,7 +14,7 @@ type TextChange struct {
 
 type Watcher struct{}
 
-func NewWatcher(_ time.Duration) *Watcher {
+func NewWatcher() *Watcher {
 	return &Watcher{}
 }
 
