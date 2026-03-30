@@ -2,39 +2,49 @@
 
 ## Goal
 
-Build a private clipboard sync from a Windows 11 PC to an Android phone over Tailscale.
+Build a private bidirectional clipboard sync between a Windows 11 PC and an Android phone over Tailscale.
 
-Phase 1 is intentionally narrow:
+The current scope is intentionally narrow:
 
-- Windows -> Android only
 - Text clipboard only
-- Automatic and near real-time
+- Automatic and near real-time in both directions
 - No cloud services
 - No user interaction during normal use
 
-Future bidirectional sync is out of scope for now, but the wire format should leave room for it.
-
 ## End-State Design
 
-Tailclip has only two moving parts:
+Tailclip has three moving parts:
 
 - A small Windows background agent written in Go
-- A Tasker flow on Android that receives clipboard events and writes them to the phone clipboard
+- A Tasker receiver flow on Android that accepts `Windows -> Android` clipboard events over HTTP
+- A Tasker sender flow on Android that detects clipboard changes and sends them to the Windows `/share` endpoint
 
-The Windows agent detects clipboard changes, sends them over HTTP through the tailnet, and Tasker applies the received text locally on Android.
+The Windows agent watches the Windows clipboard and sends updates to Android. The Android sender profile watches for clipboard changes with a Tasker `Logcat Entry` trigger, reads the current clipboard text, and posts it back to the Windows agent.
 
 No custom server, broker, or cloud relay is involved.
 
 ## Data Flow
 
+### Windows -> Android
+
 1. User copies text on Windows.
 2. The Windows agent receives an event-driven clipboard change notification.
 3. The agent reads the current clipboard text.
 4. If the text is empty, non-text, or unchanged from the last successfully sent value, it does nothing.
-5. If the text is new, the agent sends an HTTP `POST` to the Android Tasker endpoint over Tailscale.
+5. If the text is new, the agent sends an HTTP `POST` to the Android Tasker receiver endpoint over Tailscale.
 6. Tasker validates the shared token, extracts the text, and writes it to the Android clipboard.
 7. Tasker returns a success response.
 8. The Windows agent records that content as the last successful send.
+
+### Android -> Windows
+
+1. User copies text on Android.
+2. Tasker sees the clipboard-related logcat entry.
+3. The sender profile runs `Get Clipboard`.
+4. If the clipboard is empty or matches `%PREV_CLIP`, Tasker stops without sending.
+5. Otherwise Tasker sends `POST /share` with the clipboard text as `text/plain` to the Windows agent over Tailscale.
+6. The Windows agent validates the token and writes the received text to the Windows clipboard.
+7. On success, Tasker stores the sent value in `%PREV_CLIP`.
 
 ## Components
 
@@ -47,16 +57,17 @@ Responsibilities:
 - Read plain text clipboard content only
 - Ignore duplicate clipboard events for unchanged text
 - Send clipboard payloads to Android over HTTP
+- Expose an authenticated HTTP endpoint for Android `->` Windows sends
+- Apply received Android clipboard text to the Windows clipboard
 - Log failures without blocking future clipboard updates
 
-Non-goals for the Windows agent in Phase 1:
+Non-goals for the Windows agent:
 
-- Receiving clipboard updates from Android
 - Syncing images, files, or rich clipboard formats
 - Persistent offline retry queues
 - Device discovery
 
-### Android Tasker flow
+### Android Tasker receiver flow
 
 Responsibilities:
 
@@ -66,7 +77,21 @@ Responsibilities:
 - Write `content` to the Android clipboard
 - Return a simple `2xx` response on success
 
-The Android side is intentionally dumb in v1. The Windows agent owns the primary dedup behavior.
+### Android Tasker sender flow
+
+Responsibilities:
+
+- Listen for clipboard-related logcat events
+- Read the current clipboard content with Tasker's `Get Clipboard`
+- Skip empty clipboard values
+- Skip values matching `%PREV_CLIP`
+- Send the current text to the Windows `/share` endpoint with bearer auth
+
+Constraints:
+
+- Requires Tasker logcat access
+- Requires background clipboard access granted over ADB on modern Android builds
+- Depends on Tasker surviving background execution limits
 
 ## Networking
 
@@ -77,15 +102,23 @@ Transport is plain HTTP over the tailnet.
 - No separate backend service
 - Static target endpoint configured in the Windows agent
 
-Typical endpoint shape:
+Typical Android receiver endpoint:
 
 ```text
 http://100.x.y.z:8080/clipboard
 ```
 
+Typical Windows sender target:
+
+```text
+http://100.x.y.z:8080/share
+```
+
 MagicDNS is fine too, but endpoint discovery is not part of the design.
 
 ## Request Format
+
+### Windows -> Android
 
 The Windows agent sends a JSON payload like this:
 
@@ -115,24 +148,39 @@ HTTP request requirements:
 - Header: auth token, preferably `Authorization: Bearer <token>`
 - Success: any `2xx` response
 
+### Android -> Windows
+
+The Tasker sender sends:
+
+- Method: `POST`
+- Path: `/share`
+- Header: `Content-Type: text/plain`
+- Header: `Authorization: Bearer <token>`
+- Body: raw clipboard text
+- Success: any `2xx` response
+
 ## Dedup Rules
 
 The design stays intentionally simple.
 
-- Only send text clipboard values
-- Ignore empty clipboard text
-- Do not send if the new text matches the last successfully sent text or content hash
-- Treat repeated Windows clipboard notifications for the same copied value as duplicates
+- Windows sender:
+  - only sends text clipboard values
+  - ignores empty clipboard text
+  - does not send if the new text matches the last successfully sent text or content hash
+  - treats repeated Windows clipboard notifications for the same copied value as duplicates
 
-This is enough for Phase 1. More advanced loop prevention can come later when Android -> Windows exists.
+- Android sender:
+  - only sends plain text clipboard values Tasker can read
+  - ignores empty clipboard text
+  - uses `%PREV_CLIP` to suppress immediate duplicates after a successful send
 
 ## Reliability Model
 
 Delivery is best effort.
 
-- Send immediately on new clipboard content
+- Send immediately on new clipboard content in either direction
 - Use a short HTTP timeout
-- If the phone is unreachable or Tasker rejects the request, log the failure and move on
+- If either side is unreachable or rejects the request, log or notify and move on
 - Do not queue unsent clipboard items on disk
 - Do not replay old clipboard history
 
@@ -143,6 +191,7 @@ That keeps the agent simple and predictable.
 The Windows agent should use a small local config file with:
 
 - `android_url`
+- `windows_listen_addr`
 - `auth_token`
 - `device_id`
 - `http_timeout_ms`
@@ -167,13 +216,16 @@ If `device_id` is missing, the agent may derive a stable default locally.
 - Tasker installed and configured
 - Battery optimization disabled if needed
 - Clipboard write permissions working on the target Android version
+- Sender profile granted `READ_LOGS`
+- Sender profile granted background clipboard access over ADB
 
 ## Success Criteria
 
 The implementation is done when:
 
 - Copying text on Windows causes that text to appear on Android automatically
+- Copying text on Android causes that text to appear on Windows automatically
 - End-to-end sync is usually under 1 second
-- Re-copying the same text does not spam the Android device
+- Re-copying the same text does not spam either device
 - Temporary network failures do not crash the Windows agent
 - The setup works without ongoing manual intervention

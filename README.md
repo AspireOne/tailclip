@@ -5,7 +5,7 @@ Tailclip is a small Go tray app that syncs clipboard text between a Windows PC a
 It is designed for a private, local-first flow:
 
 - Windows -> Android automatic clipboard sync
-- Android -> Windows manual `Share -> Send to PC` via Tasker
+- Android -> Windows background clipboard send via Tasker
 - No cloud relay, no broker service
 
 Current platform support is intentionally narrow: Windows as the always-on agent and Android/Tasker as the phone-side integration. Other platforms are not supported today unless someone adds the missing implementation and opens a PR.
@@ -16,7 +16,7 @@ Current platform support is intentionally narrow: Windows as the always-on agent
 2. When new non-empty text appears, it creates a clipboard event payload.
 3. It sends the payload as `POST` JSON to your Android endpoint over Tailscale.
 4. Duplicate content is skipped using a content hash.
-5. Tailclip also exposes a small authenticated HTTP endpoint on Windows so Tasker can manually send shared text back to the PC.
+5. Tailclip also exposes a small authenticated HTTP endpoint on Windows so Tasker can send Android clipboard text back to the PC.
 
 Request payload shape:
 
@@ -103,8 +103,8 @@ go run ./cmd/tailclip-agent -config "C:\path\to\config.json"
 
 Tasker setup instructions are in:
 
-- [docs/TASKER_SETUP.md](docs/TASKER_SETUP.md) for automatic `Windows -> Android`
-- [docs/TASKER_SHARE_TO_PC.md](docs/TASKER_SHARE_TO_PC.md) for manual `Android -> Windows`
+- [docs/TASKER_SETUP.md](docs/TASKER_SETUP.md) for both Tasker profiles and the overall Android setup requirements
+- [docs/TASKER_SHARE_TO_PC.md](docs/TASKER_SHARE_TO_PC.md) for the Android `->` Windows sender profile, including the required `READ_LOGS` and background clipboard ADB grants
 
 Importable Tasker assets live in:
 
@@ -158,15 +158,16 @@ Terminal shortcut:
 - `internal/config`: config loading/validation
 - `scripts`: local developer helpers, including release trigger
 - `docs/ARCHITECTURE.md`: architecture and design notes
-- `docs/TASKER_SETUP.md`: Tasker guide for automatic `Windows -> Android`
-- `docs/TASKER_SHARE_TO_PC.md`: Tasker guide for manual `Android -> Windows`
+- `docs/TASKER_SETUP.md`: Tasker guide for both Android Tasker profiles and setup requirements
+- `docs/TASKER_SHARE_TO_PC.md`: Tasker guide for automatic Android `->` Windows clipboard sending
 - `docs/RELEASING.md`: GitHub release workflow and versioning
 - `integrations/tasker`: importable Tasker assets and endpoint test helpers
 
 ## Notes
 
-- Current implementation is bidirectional, but only the Windows -> Android path is automatic.
-- Tasker on Android is required for both the phone receiver flow and the manual share-to-PC flow.
+- Current implementation is automatic in both directions, with Windows clipboard watching on the PC side and a Tasker logcat-plus-clipboard flow on Android.
+- Tasker on Android is required for both the phone receiver flow and the Android clipboard sender flow.
+- The Android sender profile depends on extra privileges that are not part of normal app setup: Tasker needs logcat access and background clipboard access granted over ADB.
 - Delivery is best effort: failed sends are logged and the agent continues.
 - Windows logs are written to `%APPDATA%\tailclip\logs\tailclip.log`.
 - Non-Windows builds compile, but clipboard watching is only implemented on Windows.
