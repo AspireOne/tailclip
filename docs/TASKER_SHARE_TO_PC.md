@@ -79,15 +79,8 @@ Use these actions in `Tailclip Send To PC`:
    - `URL`: `%TAILCLIP_PC_URL`
    - `Headers`:
      - `Authorization: Bearer %TAILCLIP_TOKEN`
-     - `Content-Type: application/json`
-   - `Body`:
-
-```json
-{
-  "content": "%rs_text",
-  "source_device_id": "android-tasker"
-}
-```
+     - `Content-Type: text/plain`
+   - `Body`: `%rs_text`
 
 6. `If`
    - `%http_response_code ~ 2*`
@@ -105,10 +98,14 @@ Tasker does not need to compute the content hash. Tailclip fills in missing even
 Tailclip listens for:
 
 - `POST /share`
-- `Content-Type: application/json`
 - `Authorization: Bearer <token>`
 
-Minimal body:
+Supported body formats:
+
+- `text/plain`
+  - request body is the raw text to place on the Windows clipboard
+- `application/json`
+  - compatible with the older payload shape:
 
 ```json
 {
@@ -151,4 +148,5 @@ Expected result:
 ## Notes
 
 - This path is intentionally manual. It works with Gboard because it uses Android's share flow, not background clipboard reads.
-- Tailclip dedups repeated inbound text and suppresses the obvious immediate bounce-back case against the last outbound Windows clipboard send.
+- Tailclip accepts raw `text/plain` so Tasker does not need to escape JSON.
+- Tailclip suppresses the obvious immediate bounce-back case against the last outbound Windows clipboard send.

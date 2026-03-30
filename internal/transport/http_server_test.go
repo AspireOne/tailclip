@@ -34,6 +34,7 @@ func TestServerAcceptsInboundShare(t *testing.T) {
 		"content": "hello",
 	}))
 	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
 
 	server.handleShare(rec, req)
 
@@ -68,6 +69,7 @@ func TestServerPreservesInboundWhitespace(t *testing.T) {
 		"content": content,
 	}))
 	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
 
 	server.handleShare(rec, req)
 
@@ -100,6 +102,7 @@ func TestServerRecomputesInboundContentHash(t *testing.T) {
 		"content_hash": "sha256:stale",
 	}))
 	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
 
 	server.handleShare(rec, req)
 
@@ -125,6 +128,7 @@ func TestServerRejectsUnauthorizedRequests(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, sharePath, bodyReader(t, map[string]any{
 		"content": "hello",
 	}))
+	req.Header.Set("Content-Type", "application/json")
 
 	server.handleShare(rec, req)
 
@@ -148,6 +152,7 @@ func TestServerRejectsEmptyContent(t *testing.T) {
 		"content": "   ",
 	}))
 	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
 
 	server.handleShare(rec, req)
 
@@ -174,6 +179,35 @@ func TestServerRejectsWrongMethod(t *testing.T) {
 
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("expected 405, got %d", rec.Code)
+	}
+}
+
+func TestServerAcceptsPlainTextInboundShare(t *testing.T) {
+	var got event.ClipboardEvent
+	server := NewServer(testLogger(), config.Config{
+		WindowsListenAddr: ":8080",
+		AuthToken:         "secret",
+		DeviceID:          "pc",
+	}, func(ctx context.Context, evt event.ClipboardEvent) error {
+		got = evt
+		return nil
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, sharePath, bytes.NewBufferString("hello\n\"quoted\""))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "text/plain")
+
+	server.handleShare(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if got.Content != "hello\n\"quoted\"" {
+		t.Fatalf("expected raw text body to round-trip, got %q", got.Content)
+	}
+	if got.SourceDeviceID != "android-tasker" {
+		t.Fatalf("expected default source device id, got %q", got.SourceDeviceID)
 	}
 }
 

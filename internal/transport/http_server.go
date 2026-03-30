@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -97,9 +98,9 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var evt event.ClipboardEvent
-	if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
+	evt, err := s.decodeEvent(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	evt = s.normalizeEvent(evt)
@@ -116,6 +117,24 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
+}
+
+func (s *Server) decodeEvent(r *http.Request) (event.ClipboardEvent, error) {
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	if strings.HasPrefix(contentType, "application/json") {
+		var evt event.ClipboardEvent
+		if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
+			return event.ClipboardEvent{}, errors.New("invalid json")
+		}
+		return evt, nil
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return event.ClipboardEvent{}, errors.New("invalid request body")
+	}
+
+	return event.ClipboardEvent{Content: string(body)}, nil
 }
 
 func (s *Server) authorized(header string) bool {
