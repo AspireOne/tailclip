@@ -21,12 +21,12 @@ When you run the `Release` workflow from the GitHub Actions tab, it will:
    - `docs/TASKER_SETUP.md`
    - `docs/TASKER_SHARE_TO_PC.md`
    - `integrations/tasker/tailclip_receiver_server.prf.xml`
-   - `integrations/tasker/tailclip_share_sender.xml`
+   - `integrations/tasker/tailclip_sender.prf.xml`
    - `integrations/tasker/test-tailclip-endpoint.ps1`
    - `integrations/tasker/test-tailclip-windows-endpoint.ps1`
 5. Attach the importable Tasker profiles:
    - `integrations/tasker/tailclip_receiver_server.prf.xml`
-   - `integrations/tasker/tailclip_share_sender.xml`
+   - `integrations/tasker/tailclip_sender.prf.xml`
 6. Generate release notes with:
    - a short quick-start section
    - a commit list since the previous tag

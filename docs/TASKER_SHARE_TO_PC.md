@@ -62,7 +62,7 @@ If you want the trigger to appear directly in the Android share sheet, enable Ta
 
 This repo also includes an exported Tasker asset for this flow:
 
-- [`integrations/tasker/tailclip_share_sender.xml`](../integrations/tasker/tailclip_share_sender.xml)
+- [`integrations/tasker/tailclip_sender.prf.xml`](../integrations/tasker/tailclip_sender.prf.xml)
 
 ## Tasker Task
 
@@ -124,7 +124,7 @@ Tailclip rejects:
 
 If the bundled export works on your Tasker version, prefer importing it instead of rebuilding the share flow manually:
 
-1. Import [`integrations/tasker/tailclip_share_sender.xml`](../integrations/tasker/tailclip_share_sender.xml).
+1. Import [`integrations/tasker/tailclip_sender.prf.xml`](../integrations/tasker/tailclip_sender.prf.xml).
 2. Set `%TAILCLIP_PC_URL` to your Windows tailnet endpoint, for example `http://100.67.245.84:8080/share`.
 3. Set `%TAILCLIP_TOKEN` to the same value as Tailclip's `auth_token`.
 4. Test from Android with `Share -> Send to PC`.

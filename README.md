@@ -109,7 +109,7 @@ Tasker setup instructions are in:
 Importable Tasker assets live in:
 
 - `integrations/tasker/tailclip_receiver_server.prf.xml`
-- `integrations/tasker/tailclip_share_sender.xml`
+- `integrations/tasker/tailclip_sender.prf.xml`
 - `integrations/tasker/test-tailclip-endpoint.ps1`
 - `integrations/tasker/test-tailclip-windows-endpoint.ps1`
 
