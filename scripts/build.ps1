@@ -27,8 +27,7 @@ try {
         }
     }
 
-    $consoleExe = Join-Path $outputPath "tailclip-agent.exe"
-    $guiExe = Join-Path $outputPath "tailclip-agent-gui.exe"
+    $exePath = Join-Path $outputPath "tailclip-agent.exe"
 
     Write-Host "Generating embedded manifest resource: $resourceObject"
     go run ./cmd/genwinres -manifest $manifestSource -out $resourceObject -arch $targetArch
@@ -36,20 +35,13 @@ try {
         exit $LASTEXITCODE
     }
 
-    Write-Host "Building console binary: $consoleExe"
-    go build -o $consoleExe ./cmd/tailclip-agent
+    Write-Host "Building Windows GUI binary: $exePath"
+    go build -ldflags="-H windowsgui" -o $exePath ./cmd/tailclip-agent
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
 
-    Write-Host "Building Windows GUI binary: $guiExe"
-    go build -ldflags="-H windowsgui" -o $guiExe ./cmd/tailclip-agent
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-
-    Remove-Item -LiteralPath "$consoleExe.manifest" -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath "$guiExe.manifest" -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath "$exePath.manifest" -Force -ErrorAction SilentlyContinue
 
     Write-Host "Build complete."
 }

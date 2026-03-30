@@ -79,11 +79,10 @@ Build the binaries first:
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
-Then run either binary:
+Then run the Windows agent:
 
 ```powershell
 .\bin\tailclip-agent.exe
-.\bin\tailclip-agent-gui.exe
 ```
 
 The build embeds the Windows manifest into the executable, so no sidecar `.manifest` file is required at runtime.
@@ -126,8 +125,7 @@ Equivalent manual commands:
 
 ```powershell
 go run ./cmd/genwinres -manifest .\cmd\tailclip-agent\app.manifest -out .\cmd\tailclip-agent\rsrc_windows_amd64.syso -arch amd64
-go build -o bin/tailclip-agent.exe ./cmd/tailclip-agent
-go build -ldflags="-H windowsgui" -o bin/tailclip-agent-gui.exe ./cmd/tailclip-agent
+go build -ldflags="-H windowsgui" -o bin/tailclip-agent.exe ./cmd/tailclip-agent
 ```
 
 ## Test
