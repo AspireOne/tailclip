@@ -145,6 +145,7 @@ func (s *syncState) markSent(contentHash string) {
 func (s *syncState) markInboundApplied(contentHash string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.lastSentHash = ""
 	s.pendingEchoHash = contentHash
 }
 

@@ -255,11 +255,13 @@ func TestServerRejectsUnsupportedContentType(t *testing.T) {
 }
 
 func TestServerRejectsOversizedInboundShare(t *testing.T) {
+	applyCalled := false
 	server := NewServer(testLogger(), config.Config{
 		WindowsListenAddr: ":8080",
 		AuthToken:         "secret",
 		DeviceID:          "pc",
 	}, func(ctx context.Context, evt event.ClipboardEvent) error {
+		applyCalled = true
 		return nil
 	})
 
@@ -276,8 +278,41 @@ func TestServerRejectsOversizedInboundShare(t *testing.T) {
 
 	server.handleShare(rec, req)
 
-	if rec.Code == http.StatusOK {
-		t.Fatal("expected request to be rejected, but got 200")
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected 413, got %d", rec.Code)
+	}
+	if applyCalled {
+		t.Fatal("expected oversized request to be rejected before apply")
+	}
+}
+
+func TestServerRejectsOversizedInboundJSONShare(t *testing.T) {
+	applyCalled := false
+	server := NewServer(testLogger(), config.Config{
+		WindowsListenAddr: ":8080",
+		AuthToken:         "secret",
+		DeviceID:          "pc",
+	}, func(ctx context.Context, evt event.ClipboardEvent) error {
+		applyCalled = true
+		return nil
+	})
+
+	largeContent := string(bytes.Repeat([]byte{'a'}, 2*1024*1024+1))
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, sharePath, bodyReader(t, map[string]any{
+		"content": largeContent,
+	}))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
+
+	server.handleShare(rec, req)
+
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected 413, got %d", rec.Code)
+	}
+	if applyCalled {
+		t.Fatal("expected oversized request to be rejected before apply")
 	}
 }
 

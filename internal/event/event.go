@@ -3,7 +3,10 @@ package event
 import (
 	"crypto/sha256"
 	"fmt"
+	"strings"
 	"time"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 type ClipboardEvent struct {
@@ -26,8 +29,15 @@ func NewClipboardEvent(content, deviceID string, detectedAt time.Time) Clipboard
 
 func HashContent(content string) string {
 	h := sha256.New()
-	h.Write([]byte(content))
+	h.Write([]byte(normalizeHashInput(content)))
 	return fmt.Sprintf("sha256:%x", h.Sum(nil))
+}
+
+func normalizeHashInput(content string) string {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
+	content = norm.NFC.String(content)
+	return content
 }
 
 func NewEventID() string {

@@ -136,7 +136,7 @@ Fields:
 
 - `id`: unique per clipboard event
 - `content`: clipboard text to apply on Android
-- `content_hash`: dedup helper derived from the exact text content
+- `content_hash`: dedup helper derived from normalized text content so equivalent line endings and Unicode forms hash the same
 - `source_device_id`: sender identity for future loop prevention
 - `created_at`: UTC timestamp for logging and debugging
 
@@ -157,6 +157,7 @@ The Tasker sender sends:
 - Header: `Content-Type: text/plain`
 - Header: `Authorization: Bearer <token>`
 - Body: raw clipboard text
+- Limit: reject bodies larger than 2 MiB with `413 Payload Too Large`
 - Success: any `2xx` response
 
 ## Dedup Rules

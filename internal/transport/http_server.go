@@ -17,6 +17,7 @@ import (
 )
 
 const sharePath = "/share"
+const maxInboundBodyBytes = 2 * 1024 * 1024
 
 type ClipboardApplier func(context.Context, event.ClipboardEvent) error
 
@@ -107,10 +108,14 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	evt, err := s.decodeEvent(r)
+	evt, err := s.decodeEvent(w, r)
 	if err != nil {
-		s.logger.Warn("inbound share rejected", "reason", err.Error(), "remote_addr", r.RemoteAddr)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		status := http.StatusBadRequest
+		if errors.Is(err, errRequestTooLarge) {
+			status = http.StatusRequestEntityTooLarge
+		}
+		s.logger.Warn("inbound share rejected", "reason", err.Error(), "remote_addr", r.RemoteAddr, "status_code", status)
+		http.Error(w, err.Error(), status)
 		return
 	}
 	evt = s.normalizeEvent(evt)
@@ -130,11 +135,17 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 }
 
-func (s *Server) decodeEvent(r *http.Request) (event.ClipboardEvent, error) {
+var errRequestTooLarge = errors.New("request body too large")
+
+func (s *Server) decodeEvent(w http.ResponseWriter, r *http.Request) (event.ClipboardEvent, error) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxInboundBodyBytes)
 	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
 	if strings.HasPrefix(contentType, "application/json") {
 		var evt event.ClipboardEvent
 		if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
+			if isBodyTooLarge(err) {
+				return event.ClipboardEvent{}, errRequestTooLarge
+			}
 			return event.ClipboardEvent{}, errors.New("invalid json")
 		}
 		return evt, nil
@@ -145,10 +156,18 @@ func (s *Server) decodeEvent(r *http.Request) (event.ClipboardEvent, error) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		if isBodyTooLarge(err) {
+			return event.ClipboardEvent{}, errRequestTooLarge
+		}
 		return event.ClipboardEvent{}, errors.New("invalid request body")
 	}
 
 	return event.ClipboardEvent{Content: string(body)}, nil
+}
+
+func isBodyTooLarge(err error) bool {
+	var maxBytesErr *http.MaxBytesError
+	return errors.As(err, &maxBytesErr)
 }
 
 func (s *Server) authorized(header string) bool {

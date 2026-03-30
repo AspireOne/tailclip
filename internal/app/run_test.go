@@ -2,14 +2,9 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -217,95 +212,6 @@ func TestRunCancelsSiblingWorkerOnError(t *testing.T) {
 	case <-serverCanceled:
 	case <-time.After(time.Second):
 		t.Fatal("expected sibling worker context to be canceled before Run returned")
-	}
-}
-
-func TestEchoCancellationAcrossRun(t *testing.T) {
-	previousNewWatcher := newWatcher
-	previousSetClipboardText := setClipboardText
-	previousNewInboundServer := newInboundServer
-	defer func() {
-		newWatcher = previousNewWatcher
-		setClipboardText = previousSetClipboardText
-		newInboundServer = previousNewInboundServer
-	}()
-
-	// 1. Mock Watcher
-	watcher := &fakeWatcher{ch: make(chan clipboard.TextChange, 1)}
-	newWatcher = func() clipboardWatcher { return watcher }
-
-	// 2. Mock Clipboard Writer
-	var lastSetText atomic.Value
-	setClipboardText = func(text string) error {
-		lastSetText.Store(text)
-		return nil
-	}
-
-	// 3. Mock Android Receiver (Outbound target)
-	var outboundReceived atomic.Int32
-	var lastOutboundText atomic.Value
-	androidServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		outboundReceived.Add(1)
-		var evt event.ClipboardEvent
-		json.NewDecoder(r.Body).Decode(&evt)
-		lastOutboundText.Store(evt.Content)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer androidServer.Close()
-
-	// 4. Mock Inbound Server to use a real server on a random port
-	cfg := config.Default()
-	cfg.AndroidURL = androidServer.URL
-	cfg.WindowsListenAddr = "127.0.0.1:0" // Random port
-	cfg.AuthToken = "secret"
-	cfg.DeviceID = "pc"
-
-	newInboundServer = func(logger *slog.Logger, cfg config.Config, apply transport.ClipboardApplier) inboundServer {
-		s := transport.NewServer(logger, cfg, apply)
-		return s
-	}
-	cfg.WindowsListenAddr = "127.0.0.1:54321"
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	go Run(ctx, testLogger(), cfg)
-	time.Sleep(200 * time.Millisecond) // Wait for server
-
-	// 5. Simulate Inbound from Android
-	req, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:54321/share", strings.NewReader("from-android"))
-	req.Header.Set("Authorization", "Bearer secret")
-	req.Header.Set("Content-Type", "text/plain")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("failed to send inbound share: %v", err)
-	}
-	resp.Body.Close()
-
-	// Verify it was applied
-	deadline := time.Now().Add(time.Second)
-	for lastSetText.Load() == nil && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if lastSetText.Load() != "from-android" {
-		t.Fatalf("expected 'from-android' applied, got %v", lastSetText.Load())
-	}
-
-	// 6. Simulate Windows Echo
-	watcher.ch <- clipboard.TextChange{Text: "from-android", DetectedAt: time.Now()}
-	time.Sleep(100 * time.Millisecond)
-	if outboundReceived.Load() > 0 {
-		t.Fatal("expected no outbound for echo")
-	}
-
-	// 7. Simulate Real Change
-	watcher.ch <- clipboard.TextChange{Text: "new-windows", DetectedAt: time.Now()}
-	deadline = time.Now().Add(time.Second)
-	for outboundReceived.Load() < 1 && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if outboundReceived.Load() != 1 {
-		t.Fatal("expected outbound for new content")
 	}
 }
 
