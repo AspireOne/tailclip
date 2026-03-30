@@ -1,9 +1,7 @@
 package event
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"time"
 )
@@ -16,26 +14,22 @@ type ClipboardEvent struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
-func NewClipboardEvent(content, deviceID string, createdAt time.Time) ClipboardEvent {
+func NewClipboardEvent(content, deviceID string, detectedAt time.Time) ClipboardEvent {
 	return ClipboardEvent{
 		ID:             NewEventID(),
 		Content:        content,
 		ContentHash:    HashContent(content),
 		SourceDeviceID: deviceID,
-		CreatedAt:      createdAt.UTC(),
+		CreatedAt:      detectedAt.UTC(),
 	}
 }
 
 func HashContent(content string) string {
-	sum := sha256.Sum256([]byte(content))
-	return "sha256:" + hex.EncodeToString(sum[:])
+	h := sha256.New()
+	h.Write([]byte(content))
+	return fmt.Sprintf("sha256:%x", h.Sum(nil))
 }
 
 func NewEventID() string {
-	var buf [8]byte
-	if _, err := rand.Read(buf[:]); err != nil {
-		return fmt.Sprintf("evt_%d", time.Now().UnixNano())
-	}
-
-	return "evt_" + hex.EncodeToString(buf[:])
+	return fmt.Sprintf("evt_%d", time.Now().UnixNano())
 }

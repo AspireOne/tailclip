@@ -39,6 +39,18 @@ type outboundDecision struct {
 	skipReason  outboundSkipReason
 }
 
+var newWatcher = func() clipboardWatcher {
+	return clipboard.NewWatcher()
+}
+
+var setClipboardText = func(text string) error {
+	return clipboard.SetText(text)
+}
+
+type clipboardWatcher interface {
+	Next(context.Context) (clipboard.TextChange, error)
+}
+
 func Run(ctx context.Context, logger *slog.Logger, cfg config.Config) error {
 	outboundEnabled := strings.TrimSpace(cfg.AndroidURL) != ""
 	inboundEnabled := strings.TrimSpace(cfg.WindowsListenAddr) != ""
@@ -137,7 +149,7 @@ func (s *syncState) markInboundApplied(contentHash string) {
 }
 
 func runSender(ctx context.Context, logger *slog.Logger, cfg config.Config, sender *transport.Client, state *syncState) error {
-	watcher := clipboard.NewWatcher()
+	watcher := newWatcher()
 
 	for {
 		change, err := watcher.Next(ctx)
@@ -200,7 +212,7 @@ func decideOutboundEvent(change clipboard.TextChange, cfg config.Config, state *
 }
 
 func applyInbound(logger *slog.Logger, evt event.ClipboardEvent, state *syncState) error {
-	if err := clipboard.SetText(evt.Content); err != nil {
+	if err := setClipboardText(evt.Content); err != nil {
 		return err
 	}
 

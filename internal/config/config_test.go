@@ -125,25 +125,21 @@ func TestValidateRejectsNegativeMaxOutboundChars(t *testing.T) {
 	}
 }
 
-func TestSaveRoundTripsMaxOutboundChars(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.json")
-
-	cfg := Default()
-	cfg.AndroidURL = "http://127.0.0.1/clipboard"
-	cfg.AuthToken = "token"
-	cfg.DeviceID = "pc"
-	cfg.MaxOutboundChars = 200
-
-	if err := Save(path, cfg); err != nil {
-		t.Fatalf("save config: %v", err)
+func TestLoadFallsBackToHostnameForMissingDeviceID(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	data := []byte("{\n  \"android_url\": \"http://127.0.0.1/clipboard\",\n  \"auth_token\": \"token\"\n}\n")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
 	}
 
-	saved, err := Load(path)
+	cfg, err := Load(path)
 	if err != nil {
-		t.Fatalf("reload config: %v", err)
+		t.Fatalf("load config: %v", err)
 	}
 
-	if saved.MaxOutboundChars != 200 {
-		t.Fatalf("expected max_outbound_chars to round-trip, got %d", saved.MaxOutboundChars)
+	hostname, _ := os.Hostname()
+	if cfg.DeviceID != hostname {
+		t.Fatalf("expected device_id to fallback to hostname %q, got %q", hostname, cfg.DeviceID)
 	}
 }

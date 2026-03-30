@@ -254,6 +254,33 @@ func TestServerRejectsUnsupportedContentType(t *testing.T) {
 	}
 }
 
+func TestServerRejectsOversizedInboundShare(t *testing.T) {
+	server := NewServer(testLogger(), config.Config{
+		WindowsListenAddr: ":8080",
+		AuthToken:         "secret",
+		DeviceID:          "pc",
+	}, func(ctx context.Context, evt event.ClipboardEvent) error {
+		return nil
+	})
+
+	// 2MB + 1 byte
+	largeContent := make([]byte, 2*1024*1024+1)
+	for i := range largeContent {
+		largeContent[i] = 'a'
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, sharePath, bytes.NewReader(largeContent))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "text/plain")
+
+	server.handleShare(rec, req)
+
+	if rec.Code == http.StatusOK {
+		t.Fatal("expected request to be rejected, but got 200")
+	}
+}
+
 func bodyReader(t *testing.T, body map[string]any) io.Reader {
 	t.Helper()
 

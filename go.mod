@@ -6,6 +6,7 @@ require (
 	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
 	github.com/tc-hib/winres v0.3.1
 	golang.org/x/sys v0.42.0
+	golang.org/x/text v0.13.0
 )
 
 require (
