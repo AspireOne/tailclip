@@ -14,7 +14,7 @@ For the Android `->` Windows sender profile details, see [TASKER_SHARE_TO_PC.md]
 
 Phase 1 is intentionally simple:
 
-- Windows sends clipboard text to Android over Tailscale.
+- Windows sends clipboard text to Android over HTTP on your local network.
 - Tasker exposes an HTTP endpoint on the phone.
 - Tasker validates the auth token.
 - Tasker reads `content` from the JSON body.
@@ -25,7 +25,7 @@ The expected wire contract comes from [ARCHITECTURE.md](./ARCHITECTURE.md) and t
 ## Prerequisites
 
 - Android phone with `Tasker` installed
-- `Tailscale` installed on the phone and signed into the same tailnet as the Windows PC
+- Network connectivity between the phone and Windows PC, either over Tailscale or the same LAN
 - Tasker allowed to run in the background
 - Battery optimization disabled for Tasker if your device is aggressive about killing background apps
 - Clipboard writes working on your Android version
@@ -38,9 +38,10 @@ For the sender profile only:
 
 Recommended:
 
-- Give the phone a stable Tailscale identity with either:
-  - its tailnet IP, for example `100.x.y.z`
-  - or a MagicDNS hostname
+- Give the phone a stable reachable address, for example:
+  - its Tailscale IP, for example `100.x.y.z`
+  - a MagicDNS hostname
+  - or a LAN IP / local DNS name reachable from the PC
 
 ## Which Profile Does What
 
@@ -171,7 +172,7 @@ Create a profile:
 This makes Tasker listen on:
 
 ```text
-http://PHONE_TAILSCALE_IP:8080/clipboard
+http://PHONE_ADDRESS:8080/clipboard
 ```
 
 Important:
@@ -357,7 +358,7 @@ For this repo, a standalone exported `.prj.xml` is the best end-state artifact o
 
 Check:
 
-- phone is online in Tailscale
+- phone is reachable from the Windows PC over Tailscale or LAN
 - port `8080` is reachable
 - path is exactly `/clipboard`
 - token matches exactly

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a private bidirectional clipboard sync between a Windows 11 PC and an Android phone over Tailscale.
+Build a bidirectional clipboard sync between a Windows 11 PC and an Android phone over a local network, whether that is Tailscale or plain LAN.
 
 The current scope is intentionally narrow:
 
@@ -31,7 +31,7 @@ No custom server, broker, or cloud relay is involved.
 2. The Windows agent receives an event-driven clipboard change notification.
 3. The agent reads the current clipboard text.
 4. If the text is empty, non-text, or unchanged from the last successfully sent value, it does nothing.
-5. If the text is new, the agent sends an HTTP `POST` to the Android Tasker receiver endpoint over Tailscale.
+5. If the text is new, the agent sends an HTTP `POST` to the Android Tasker receiver endpoint over the local network.
 6. Tasker validates the shared token, extracts the text, and writes it to the Android clipboard.
 7. Tasker returns a success response.
 8. The Windows agent records that content as the last successful send.
@@ -42,7 +42,7 @@ No custom server, broker, or cloud relay is involved.
 2. Tasker sees the clipboard-related logcat entry.
 3. The sender profile runs `Get Clipboard`.
 4. If the clipboard is empty or matches `%PREV_CLIP`, Tasker stops without sending.
-5. Otherwise Tasker sends `POST /share` with the clipboard text as `text/plain` to the Windows agent over Tailscale.
+5. Otherwise Tasker sends `POST /share` with the clipboard text as `text/plain` to the Windows agent over the local network.
 6. The Windows agent validates the token and writes the received text to the Windows clipboard.
 7. On success, Tasker stores the sent value in `%PREV_CLIP`.
 
@@ -71,7 +71,7 @@ Non-goals for the Windows agent:
 
 Responsibilities:
 
-- Expose an HTTP endpoint on a fixed port reachable over Tailscale
+- Expose an HTTP endpoint on a fixed port reachable from the Windows PC
 - Validate a shared auth token
 - Parse the incoming JSON payload
 - Write `content` to the Android clipboard
@@ -95,10 +95,10 @@ Constraints:
 
 ## Networking
 
-Transport is plain HTTP over the tailnet.
+Transport is plain HTTP over the local network.
 
 - No Taildrop
-- No public internet exposure
+- No relay or broker service
 - No separate backend service
 - Static target endpoint configured in the Windows agent
 
@@ -114,7 +114,7 @@ Typical Windows sender target:
 http://100.x.y.z:8080/share
 ```
 
-MagicDNS is fine too, but endpoint discovery is not part of the design.
+Tailscale IPs or MagicDNS names are fine, and plain LAN IPs or local DNS names work too. Endpoint discovery is not part of the design.
 
 ## Request Format
 
@@ -213,6 +213,7 @@ If `device_id` is missing, the agent may derive a stable default locally.
 ### Android
 
 - Tailscale connected
+- Or both devices reachable over the same LAN
 - Tasker installed and configured
 - Battery optimization disabled if needed
 - Clipboard write permissions working on the target Android version

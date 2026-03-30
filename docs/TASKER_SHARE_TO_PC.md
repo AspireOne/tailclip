@@ -23,7 +23,7 @@ Required:
 
 - Tailclip running on Windows with `windows_listen_addr` configured
 - Tasker installed on Android
-- Tailscale connected on both devices
+- Network connectivity between both devices, either over Tailscale or the same LAN
 - `%TAILCLIP_PC_URL` and `%TAILCLIP_TOKEN` configured in Tasker
 - Tasker allowed to read logcat
 - Tasker allowed to read the clipboard while in the background
@@ -97,7 +97,7 @@ Use a config like:
 
 `windows_listen_addr` is the local address Tailclip binds on the PC. Leave it empty to disable inbound Android sends entirely.
 
-Tasker should point to the PC's tailnet URL, for example:
+Tasker should point to the PC's reachable URL, for example:
 
 ```text
 http://100.67.245.84:8080/share

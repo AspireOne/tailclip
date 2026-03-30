@@ -1,8 +1,8 @@
 # Tailclip
 
-Tailclip is a small Go tray app that syncs clipboard text between a Windows PC and an Android phone over your Tailscale network.
+Tailclip is a small Go tray app that syncs clipboard text between a Windows PC and an Android phone over your local network, including Tailscale or plain LAN.
 
-It is designed for a private, local-first flow:
+It is designed for a local-first flow:
 
 - Windows -> Android automatic clipboard sync
 - Android -> Windows background clipboard send via Tasker
@@ -14,7 +14,7 @@ Current platform support is intentionally narrow: Windows as the always-on agent
 
 1. Tailclip watches Windows clipboard change notifications.
 2. When new non-empty text appears, it creates a clipboard event payload.
-3. It sends the payload as `POST` JSON to your Android endpoint over Tailscale.
+3. It sends the payload as `POST` JSON to your Android endpoint over HTTP on your local network.
 4. Duplicate content is skipped using a content hash.
 5. Tailclip also exposes a small authenticated HTTP endpoint on Windows so Tasker can send Android clipboard text back to the PC.
 
@@ -34,8 +34,8 @@ Request payload shape:
 
 - Windows 11 (primary runtime target)
 - Go 1.26.1+
-- Tailscale connected on both devices
-- Tasker on Android with an HTTP endpoint reachable from the tailnet
+- Network connectivity between both devices, either over Tailscale or the same LAN
+- Tasker on Android with an HTTP endpoint reachable from the Windows PC
 
 ## Configuration
 
@@ -167,6 +167,7 @@ Terminal shortcut:
 
 - Current implementation is automatic in both directions, with Windows clipboard watching on the PC side and a Tasker logcat-plus-clipboard flow on Android.
 - Tasker on Android is required for both the phone receiver flow and the Android clipboard sender flow.
+- Tailclip works over either Tailscale or plain LAN. Tailscale is the recommended default when you want private cross-network access without opening ports.
 - The Android sender profile depends on extra privileges that are not part of normal app setup: Tasker needs logcat access and background clipboard access granted over ADB.
 - Delivery is best effort: failed sends are logged and the agent continues.
 - Windows logs are written to `%APPDATA%\tailclip\logs\tailclip.log`.
