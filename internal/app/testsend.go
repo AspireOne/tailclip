@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
 	"tailclip/internal/config"
@@ -11,6 +13,10 @@ import (
 )
 
 func SendTestClipboard(ctx context.Context, logger *slog.Logger, cfg config.Config, content string) error {
+	if strings.TrimSpace(cfg.AndroidURL) == "" {
+		return errors.New("config android_url is required to send a test clip")
+	}
+
 	sender := transport.NewClient(cfg)
 	evt := event.NewClipboardEvent(content, cfg.DeviceID, time.Now())
 

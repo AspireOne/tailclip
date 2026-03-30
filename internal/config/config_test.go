@@ -37,6 +37,9 @@ func TestLoadDefaultsEnabledWhenMissing(t *testing.T) {
 	if !cfg.Enabled {
 		t.Fatal("expected enabled to default to true")
 	}
+	if cfg.WindowsListenAddr != "" {
+		t.Fatalf("expected missing windows listen addr to stay disabled, got %q", cfg.WindowsListenAddr)
+	}
 }
 
 func TestSaveCreatesConfigDirectory(t *testing.T) {
@@ -62,5 +65,47 @@ func TestSaveCreatesConfigDirectory(t *testing.T) {
 	}
 	if saved.HTTPTimeout != 3*time.Second {
 		t.Fatalf("expected default http timeout, got %v", saved.HTTPTimeout)
+	}
+}
+
+func TestValidateAllowsReceiverOnlyConfig(t *testing.T) {
+	cfg := Default()
+	cfg.AndroidURL = ""
+	cfg.WindowsListenAddr = ":8080"
+	cfg.AuthToken = "token"
+	cfg.DeviceID = "pc"
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected receiver-only config to validate, got %v", err)
+	}
+}
+
+func TestDefaultLeavesInboundDisabled(t *testing.T) {
+	cfg := Default()
+	if cfg.WindowsListenAddr != "" {
+		t.Fatalf("expected default windows listen addr to be disabled, got %q", cfg.WindowsListenAddr)
+	}
+}
+
+func TestSavePreservesDisabledInboundListener(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+
+	cfg := Default()
+	cfg.AndroidURL = "http://127.0.0.1/clipboard"
+	cfg.WindowsListenAddr = ""
+	cfg.AuthToken = "token"
+	cfg.DeviceID = "pc"
+
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+
+	saved, err := Load(path)
+	if err != nil {
+		t.Fatalf("reload config: %v", err)
+	}
+
+	if saved.WindowsListenAddr != "" {
+		t.Fatalf("expected disabled inbound listener to round-trip, got %q", saved.WindowsListenAddr)
 	}
 }

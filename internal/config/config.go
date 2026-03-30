@@ -18,23 +18,25 @@ const (
 )
 
 type Config struct {
-	AndroidURL   string
-	AuthToken    string
-	DeviceID     string
-	HTTPTimeout  time.Duration
-	PollInterval time.Duration
-	LogLevel     string
-	Enabled      bool
+	AndroidURL        string
+	WindowsListenAddr string
+	AuthToken         string
+	DeviceID          string
+	HTTPTimeout       time.Duration
+	PollInterval      time.Duration
+	LogLevel          string
+	Enabled           bool
 }
 
 type fileConfig struct {
-	AndroidURL     string `json:"android_url"`
-	AuthToken      string `json:"auth_token"`
-	DeviceID       string `json:"device_id"`
-	HTTPTimeoutMS  int    `json:"http_timeout_ms"`
-	PollIntervalMS int    `json:"poll_interval_ms"`
-	LogLevel       string `json:"log_level"`
-	Enabled        *bool  `json:"enabled,omitempty"`
+	AndroidURL        string `json:"android_url"`
+	WindowsListenAddr string `json:"windows_listen_addr"`
+	AuthToken         string `json:"auth_token"`
+	DeviceID          string `json:"device_id"`
+	HTTPTimeoutMS     int    `json:"http_timeout_ms"`
+	PollIntervalMS    int    `json:"poll_interval_ms"`
+	LogLevel          string `json:"log_level"`
+	Enabled           *bool  `json:"enabled,omitempty"`
 }
 
 func Load(path string) (Config, error) {
@@ -123,8 +125,8 @@ func DefaultPath() (string, error) {
 }
 
 func (c Config) Validate() error {
-	if c.AndroidURL == "" {
-		return errors.New("config android_url is required")
+	if c.AndroidURL == "" && c.WindowsListenAddr == "" {
+		return errors.New("config must set android_url, windows_listen_addr, or both")
 	}
 	if c.AuthToken == "" {
 		return errors.New("config auth_token is required")
@@ -151,6 +153,7 @@ func durationFromMS(value int, fallback time.Duration) time.Duration {
 func normalize(raw fileConfig) (Config, error) {
 	cfg := Default()
 	cfg.AndroidURL = strings.TrimSpace(raw.AndroidURL)
+	cfg.WindowsListenAddr = strings.TrimSpace(raw.WindowsListenAddr)
 	cfg.AuthToken = strings.TrimSpace(raw.AuthToken)
 	cfg.DeviceID = strings.TrimSpace(raw.DeviceID)
 	cfg.HTTPTimeout = durationFromMS(raw.HTTPTimeoutMS, defaultHTTPTimeout)
@@ -182,12 +185,13 @@ func normalizeFileConfig(raw fileConfig) (Config, error) {
 func toFileConfig(cfg Config) fileConfig {
 	enabled := cfg.Enabled
 	return fileConfig{
-		AndroidURL:     cfg.AndroidURL,
-		AuthToken:      cfg.AuthToken,
-		DeviceID:       cfg.DeviceID,
-		HTTPTimeoutMS:  int(cfg.HTTPTimeout / time.Millisecond),
-		PollIntervalMS: int(cfg.PollInterval / time.Millisecond),
-		LogLevel:       cfg.LogLevel,
-		Enabled:        &enabled,
+		AndroidURL:        cfg.AndroidURL,
+		WindowsListenAddr: cfg.WindowsListenAddr,
+		AuthToken:         cfg.AuthToken,
+		DeviceID:          cfg.DeviceID,
+		HTTPTimeoutMS:     int(cfg.HTTPTimeout / time.Millisecond),
+		PollIntervalMS:    int(cfg.PollInterval / time.Millisecond),
+		LogLevel:          cfg.LogLevel,
+		Enabled:           &enabled,
 	}
 }

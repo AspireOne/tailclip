@@ -18,7 +18,7 @@ type ClipboardEvent struct {
 
 func NewClipboardEvent(content, deviceID string, createdAt time.Time) ClipboardEvent {
 	return ClipboardEvent{
-		ID:             newEventID(),
+		ID:             NewEventID(),
 		Content:        content,
 		ContentHash:    HashContent(content),
 		SourceDeviceID: deviceID,
@@ -31,7 +31,7 @@ func HashContent(content string) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
-func newEventID() string {
+func NewEventID() string {
 	var buf [8]byte
 	if _, err := rand.Read(buf[:]); err != nil {
 		return fmt.Sprintf("evt_%d", time.Now().UnixNano())

@@ -27,17 +27,18 @@ type TrayApp struct {
 
 	controller *tailruntime.Controller
 
-	mw               *walk.MainWindow
-	notifyIcon       *walk.NotifyIcon
-	configPathEdit   *walk.LineEdit
-	androidURLEdit   *walk.LineEdit
-	authTokenEdit    *walk.LineEdit
-	deviceIDEdit     *walk.LineEdit
-	enabledCheck     *walk.CheckBox
-	startOnLogin     *walk.CheckBox
-	statusLabel      *walk.Label
-	testStatusLabel  *walk.Label
-	toggleSyncAction *walk.Action
+	mw                    *walk.MainWindow
+	notifyIcon            *walk.NotifyIcon
+	configPathEdit        *walk.LineEdit
+	androidURLEdit        *walk.LineEdit
+	windowsListenAddrEdit *walk.LineEdit
+	authTokenEdit         *walk.LineEdit
+	deviceIDEdit          *walk.LineEdit
+	enabledCheck          *walk.CheckBox
+	startOnLogin          *walk.CheckBox
+	statusLabel           *walk.Label
+	testStatusLabel       *walk.Label
+	toggleSyncAction      *walk.Action
 
 	currentConfig config.Config
 	hasConfig     bool
@@ -107,6 +108,8 @@ func (a *TrayApp) createWindow() error {
 					LineEdit{AssignTo: &a.configPathEdit, ReadOnly: true},
 					Label{Text: "Android URL"},
 					LineEdit{AssignTo: &a.androidURLEdit},
+					Label{Text: "Windows listen addr"},
+					LineEdit{AssignTo: &a.windowsListenAddrEdit},
 					Label{Text: "Auth token"},
 					LineEdit{AssignTo: &a.authTokenEdit},
 					Label{Text: "Device ID"},
@@ -271,6 +274,7 @@ func (a *TrayApp) loadInitialState() {
 
 func (a *TrayApp) populateForm(cfg config.Config) {
 	a.androidURLEdit.SetText(cfg.AndroidURL)
+	a.windowsListenAddrEdit.SetText(cfg.WindowsListenAddr)
 	a.authTokenEdit.SetText(cfg.AuthToken)
 	a.deviceIDEdit.SetText(cfg.DeviceID)
 	a.enabledCheck.SetChecked(cfg.Enabled)
@@ -283,6 +287,7 @@ func (a *TrayApp) formConfig() (config.Config, error) {
 	}
 
 	cfg.AndroidURL = strings.TrimSpace(a.androidURLEdit.Text())
+	cfg.WindowsListenAddr = strings.TrimSpace(a.windowsListenAddrEdit.Text())
 	cfg.AuthToken = strings.TrimSpace(a.authTokenEdit.Text())
 	cfg.DeviceID = strings.TrimSpace(a.deviceIDEdit.Text())
 	cfg.Enabled = a.enabledCheck.Checked()

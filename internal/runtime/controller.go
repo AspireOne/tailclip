@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"tailclip/internal/app"
@@ -191,6 +193,9 @@ func (c *Controller) SendTestClip(ctx context.Context, cfg config.Config, conten
 
 	if err := cfg.Validate(); err != nil {
 		return err
+	}
+	if strings.TrimSpace(cfg.AndroidURL) == "" {
+		return errors.New("config android_url is required to send a test clip")
 	}
 
 	return tester(ctx, c.logger, cfg, content)

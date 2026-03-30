@@ -202,7 +202,11 @@ func TestSendTestClipUsesTester(t *testing.T) {
 func TestSendTestClipValidatesConfig(t *testing.T) {
 	controller := NewController(testLogger())
 
-	err := controller.SendTestClip(context.Background(), config.Default(), "hello")
+	cfg := config.Default()
+	cfg.AuthToken = "token"
+	cfg.DeviceID = "pc"
+
+	err := controller.SendTestClip(context.Background(), cfg, "hello")
 	if err == nil {
 		t.Fatal("expected validation error")
 	}

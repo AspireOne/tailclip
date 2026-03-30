@@ -1,14 +1,14 @@
 # Tailclip
 
-Tailclip is a small Go tray app that syncs text copied on a Windows PC to an Android phone over your Tailscale network.
+Tailclip is a small Go tray app that syncs clipboard text between a Windows PC and an Android phone over your Tailscale network.
 
 It is designed for a private, local-first flow:
 
-- Windows clipboard text only (current scope)
-- Android receives updates via a Tasker HTTP endpoint
+- Windows -> Android automatic clipboard sync
+- Android -> Windows manual `Share -> Send to PC` via Tasker
 - No cloud relay, no broker service
 
-Current platform support is intentionally narrow: Windows as the sender, Android as the receiver. Other platforms are not supported today unless someone adds the missing implementation and opens a PR.
+Current platform support is intentionally narrow: Windows as the always-on agent and Android/Tasker as the phone-side integration. Other platforms are not supported today unless someone adds the missing implementation and opens a PR.
 
 ## How It Works
 
@@ -16,6 +16,7 @@ Current platform support is intentionally narrow: Windows as the sender, Android
 2. When new non-empty text appears, it creates a clipboard event payload.
 3. It sends the payload as `POST` JSON to your Android endpoint over Tailscale.
 4. Duplicate content is skipped using a content hash.
+5. Tailclip also exposes a small authenticated HTTP endpoint on Windows so Tasker can manually send shared text back to the PC.
 
 Request payload shape:
 
@@ -49,6 +50,7 @@ Example config (`docs/config.example.json`):
 ```json
 {
   "android_url": "http://100.101.102.103:8080/clipboard",
+  "windows_listen_addr": "",
   "auth_token": "replace-me",
   "device_id": "windows-laptop",
   "enabled": true,
@@ -61,6 +63,7 @@ Example config (`docs/config.example.json`):
 Fields:
 
 - `android_url` (required): full target URL, e.g. `http://100.x.y.z:8080/clipboard`
+- `windows_listen_addr` (optional): local bind address for inbound Tasker shares; set it to `:8080` (or another address) to enable the listener, leave it empty to disable it
 - `auth_token` (required): bearer token sent as `Authorization: Bearer <token>`
 - `device_id` (optional): sender identifier; defaults to hostname if omitted
 - `enabled` (optional): whether syncing is active (default `true`)
@@ -101,12 +104,16 @@ go run ./cmd/tailclip-agent -config "C:\path\to\config.json"
 
 ## Android / Tasker
 
-Tasker setup instructions are in [docs/TASKER_SETUP.md](docs/TASKER_SETUP.md).
+Tasker setup instructions are in:
+
+- [docs/TASKER_SETUP.md](docs/TASKER_SETUP.md) for automatic `Windows -> Android`
+- [docs/TASKER_SHARE_TO_PC.md](docs/TASKER_SHARE_TO_PC.md) for manual `Android -> Windows`
 
 Importable Tasker assets live in:
 
 - `integrations/tasker/Tailclip.prf.xml`
 - `integrations/tasker/test-tailclip-endpoint.ps1`
+- `integrations/tasker/test-tailclip-windows-endpoint.ps1`
 
 ## Build
 
@@ -160,8 +167,8 @@ Terminal shortcut:
 
 ## Notes
 
-- Current implementation is one-way: Windows -> Android.
-- Tasker on Android is required for the receiver side in the current design.
+- Current implementation is bidirectional, but only the Windows -> Android path is automatic.
+- Tasker on Android is required for both the phone receiver flow and the manual share-to-PC flow.
 - Delivery is best effort: failed sends are logged and the agent continues.
 - Windows logs are written to `%APPDATA%\tailclip\logs\tailclip.log`.
 - Non-Windows builds compile, but clipboard watching is only implemented on Windows.

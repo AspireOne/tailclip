@@ -1,6 +1,8 @@
 # Tailclip Tasker Setup
 
-This document covers the Android side of Tailclip.
+This document covers the automatic `Windows -> Android` side of Tailclip.
+
+For the manual `Android -> Windows` share flow, see [TASKER_SHARE_TO_PC.md](./TASKER_SHARE_TO_PC.md).
 
 Phase 1 is intentionally simple:
 
