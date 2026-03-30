@@ -88,23 +88,34 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	s.logger.Info(
+		"inbound share request",
+		"method", r.Method,
+		"remote_addr", r.RemoteAddr,
+		"content_type", r.Header.Get("Content-Type"),
+		"auth_present", strings.TrimSpace(r.Header.Get("Authorization")) != "",
+	)
 	if r.Method != http.MethodPost {
+		s.logger.Warn("inbound share rejected", "reason", "method_not_allowed", "remote_addr", r.RemoteAddr, "method", r.Method)
 		w.Header().Set("Allow", http.MethodPost)
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	if !s.authorized(r.Header.Get("Authorization")) {
+		s.logger.Warn("inbound share rejected", "reason", "unauthorized", "remote_addr", r.RemoteAddr)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	evt, err := s.decodeEvent(r)
 	if err != nil {
+		s.logger.Warn("inbound share rejected", "reason", err.Error(), "remote_addr", r.RemoteAddr)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	evt = s.normalizeEvent(evt)
 	if strings.TrimSpace(evt.Content) == "" {
+		s.logger.Warn("inbound share rejected", "reason", "missing_content", "remote_addr", r.RemoteAddr)
 		http.Error(w, "missing content", http.StatusBadRequest)
 		return
 	}

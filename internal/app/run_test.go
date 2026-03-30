@@ -13,21 +13,28 @@ import (
 	"tailclip/internal/transport"
 )
 
-func TestSyncStateSkipsOnlyImmediateEcho(t *testing.T) {
+func TestSyncStateSkipsInboundEchoUntilClipboardChanges(t *testing.T) {
 	var state syncState
 	hash := event.HashContent("hello")
+	other := event.HashContent("world")
 
 	state.markInboundApplied(hash)
 
 	if skip := state.shouldSkipOutbound(hash); !skip {
-		t.Fatal("expected immediate echo to be skipped")
+		t.Fatal("expected first inbound echo to be skipped")
+	}
+	if skip := state.shouldSkipOutbound(hash); !skip {
+		t.Fatal("expected repeated inbound echo to remain skipped")
+	}
+	if skip := state.shouldSkipOutbound(other); skip {
+		t.Fatal("expected different clipboard content to pass through")
 	}
 	if skip := state.shouldSkipOutbound(hash); skip {
-		t.Fatal("expected later copy of the same content to be allowed")
+		t.Fatal("expected original content to be allowed again after clipboard changed")
 	}
 }
 
-func TestSyncStateClearsPendingEchoAfterNextOutboundEvent(t *testing.T) {
+func TestSyncStateClearsPendingEchoAfterDifferentClipboardEvent(t *testing.T) {
 	var state syncState
 	alpha := event.HashContent("alpha")
 	beta := event.HashContent("beta")
@@ -38,7 +45,7 @@ func TestSyncStateClearsPendingEchoAfterNextOutboundEvent(t *testing.T) {
 		t.Fatal("expected different next clipboard event to pass through")
 	}
 	if skip := state.shouldSkipOutbound(alpha); skip {
-		t.Fatal("expected pending echo hash to be cleared after one outbound event")
+		t.Fatal("expected pending echo hash to be cleared after clipboard changed")
 	}
 }
 

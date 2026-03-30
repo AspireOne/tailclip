@@ -99,11 +99,10 @@ func (s *syncState) shouldSkipOutbound(contentHash string) bool {
 	defer s.mu.Unlock()
 
 	if s.pendingEchoHash != "" {
-		pending := s.pendingEchoHash
-		s.pendingEchoHash = ""
-		if contentHash == pending {
+		if contentHash == s.pendingEchoHash {
 			return true
 		}
+		s.pendingEchoHash = ""
 	}
 
 	return contentHash == s.lastSentHash
